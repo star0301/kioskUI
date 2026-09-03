@@ -61,7 +61,7 @@ input:focus-visible {
   top: 0;
   left: 50%;
   width: 1080px;
-  height: 1920px;
+  height: var(--kiosk-height, 1920px);
   overflow: hidden;
   background: var(--background);
   box-shadow: 0 0 48px rgba(0, 0, 0, 0.2);
@@ -117,7 +117,7 @@ input:focus-visible {
   top: 50%;
   left: 50%;
   width: 820px;
-  max-height: 1710px;
+  max-height: calc(var(--kiosk-height, 1920px) - 80px);
   overflow-y: auto;
   border-radius: 32px;
   background: #ffffff;
@@ -681,7 +681,7 @@ input:focus-visible {
   display: grid;
   grid-template-columns: 624.375px 388.125px;
   gap: 20.25px;
-  height: 1280px;
+  height: calc(var(--kiosk-height, 1920px) - 640px);
   padding: 28px 23.625px;
   background: #f1f3f6;
 }
@@ -690,7 +690,7 @@ input:focus-visible {
 .catalog-panel {
   display: flex;
   min-width: 0;
-  height: 1224px;
+  height: calc(var(--kiosk-height, 1920px) - 696px);
   flex-direction: column;
   overflow: hidden;
   border: 1px solid #dee0e5;
@@ -766,7 +766,7 @@ input:focus-visible {
 
 .empty-cart {
   display: flex;
-  min-height: 1062px;
+  min-height: 0;
   padding: 0 40.5px;
   gap: 18px;
 }
@@ -1302,12 +1302,33 @@ input:focus-visible {
 
 .empty-cart {
   width: 100%;
-  min-height: 1062px;
+  min-height: 0;
   flex: 1;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
+}
+
+.phone-display span {
+  display: inline-block;
+}
+
+.phone-prefix,
+.phone-separator,
+.phone-entered {
+  color: #1f1f24;
+}
+
+.phone-prefix,
+.phone-entered {
+  font-weight: 800;
+}
+
+.phone-placeholder {
+  color: #9ca3af;
+  font-weight: 600;
+  letter-spacing: 5px;
 }
 
 .empty-cart p {

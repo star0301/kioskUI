@@ -162,16 +162,33 @@ function formatPhone(value) {
   return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
 }
 
+function phoneInputMarkup(value) {
+  const digits = normalizePhone(value);
+  const middle = digits.slice(3, 7);
+  const last = digits.slice(7, 11);
+  const middlePlaceholder = "_".repeat(4 - middle.length);
+  const lastPlaceholder = "_".repeat(4 - last.length);
+
+  return `<span class="phone-prefix">010</span><span class="phone-separator">-</span><span class="phone-entered">${middle}</span><span class="phone-placeholder">${middlePlaceholder}</span><span class="phone-separator">-</span><span class="phone-entered">${last}</span><span class="phone-placeholder">${lastPlaceholder}</span>`;
+}
+
 function safeMaxPoints() {
   if (!state.member) return 0;
   return Math.floor(Math.min(state.member.points, subtotal()) / 50) * 50;
 }
 
+function resolveKioskHeight(viewportHeight) {
+  if (viewportHeight < 1600) return 1920;
+  return Math.min(viewportHeight, 1920);
+}
+
 function updateScale() {
   const scale = Math.min(1, window.innerWidth / 1080);
+  const kioskHeight = resolveKioskHeight(window.innerHeight);
   elements.kiosk.style.setProperty("--kiosk-scale", scale);
+  elements.kiosk.style.setProperty("--kiosk-height", `${kioskHeight}px`);
   elements.stageShell.style.width = `${1080 * scale}px`;
-  elements.stageShell.style.height = `${1920 * scale}px`;
+  elements.stageShell.style.height = `${kioskHeight * scale}px`;
 }
 
 function renderTotals() {
@@ -372,12 +389,12 @@ function openPointLookup() {
 }
 
 function openPhoneEntry() {
-  state.phoneInput = "";
+  state.phoneInput = "010";
   renderPointLookup();
 }
 
 function renderPointLookup() {
-  const formatted = formatPhone(state.phoneInput);
+  if (!state.phoneInput.startsWith("010")) state.phoneInput = "010";
   openModal("phone", `
     <div class="figma-modal phone-login-modal">
       <button class="figma-back" type="button" data-action="back-to-point-decision">뒤로</button>
@@ -386,7 +403,7 @@ function renderPointLookup() {
       <section class="phone-login-panel">
         <h3>휴대폰 번호로 회원 확인</h3>
         <p>로그인 후 보유 포인트를 조회하고 사용할 수 있습니다.<br />특매·이벤트 할인은 이미 반영되어 있습니다.</p>
-        <div class="phone-display ${formatted ? "" : "is-placeholder"}" id="phoneDisplay">${formatted || "010 ···· ····"}</div>
+        <div class="phone-display" id="phoneDisplay" aria-label="휴대폰 번호 ${formatPhone(state.phoneInput)}">${phoneInputMarkup(state.phoneInput)}</div>
         ${keypadMarkup("phone")}
         <p class="error-message" id="phoneError"></p>
         <button class="figma-dark" type="button" data-action="lookup-member">확인</button>
@@ -615,8 +632,10 @@ function openResetOptions() {
 
 function handleKeypad(kind, key) {
   if (kind === "phone") {
-    if (key === "clear") state.phoneInput = "";
-    else if (key === "backspace") state.phoneInput = state.phoneInput.slice(0, -1);
+    if (key === "clear") state.phoneInput = "010";
+    else if (key === "backspace") {
+      if (state.phoneInput.length > 3) state.phoneInput = state.phoneInput.slice(0, -1);
+    }
     else if (state.phoneInput.length < 11) state.phoneInput += key;
     renderPointLookup();
     return;
