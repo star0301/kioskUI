@@ -1,6 +1,18 @@
 "use strict";
 
-const TEST_MEMBER = { phone: "01012341234", points: 2000, createdAt: "demo-seed" };
+const TEST_MEMBER = { phone: "01012341234", points: 4259, createdAt: "demo-seed" };
+const BARCODE_PRODUCTS = new Map([
+  ["8809219929858", { id: "barcode-8809219929858", barcode: "8809219929858", name: "서리태 가득 콩물두유", price: 2500 }],
+  ["8801223100209", { id: "barcode-8801223100209", barcode: "8801223100209", name: "초정 탄산수", price: 1500 }],
+]);
+const DEMO_POINT_HISTORY = [
+  { dateTime: "2026-09-03 17:21:11", type: "적립", earned: 159, used: 0 },
+  { dateTime: "2026-08-30 12:15:20", type: "사용", earned: 0, used: 100 },
+  { dateTime: "2026-08-20 18:42:03", type: "적립", earned: 300, used: 0 },
+  { dateTime: "2026-08-15 10:09:44", type: "적립", earned: 400, used: 0 },
+  { dateTime: "2026-07-10 16:20:10", type: "사용", earned: 0, used: 500 },
+  { dateTime: "2026-06-20 09:31:08", type: "적립", earned: 4000, used: 0 },
+];
 const productSpecs = {
   라면: ["신라면|1000|🍜", "진라면 매운맛|950|🍜", "짜파게티|1200|🍝", "불닭볶음면|1300|🌶️", "너구리|1150|🍲", "육개장 사발면|1100|🥣"],
   음료: ["생수 500ml|900|💧", "콜라 500ml|2200|🥤", "사이다 500ml|2100|🥤", "오렌지 주스|2500|🧃", "아메리카노|2300|☕", "이온음료|2000|🧊"],
@@ -40,6 +52,10 @@ const state = {
   modalMode: null,
   paymentTimer: null,
   countdownTimer: null,
+  barcodeTimer: null,
+  modalAutoCloseTimer: null,
+  flowContext: "payment",
+  historyRange: 7,
   touchStartX: null,
 };
 
@@ -66,6 +82,9 @@ const elements = {
   memberHeader: $("#memberHeader"),
   memberPhoneText: $("#memberPhoneText"),
   memberPointText: $("#memberPointText"),
+  barcodeScannerInput: $("#barcodeScannerInput"),
+  historyButton: $("#historyButton"),
+  pointLookupButton: $("#pointLookupButton"),
   modalLayer: $("#modalLayer"),
   modalContent: $("#modalContent"),
   toast: $("#toast"),
@@ -142,7 +161,8 @@ const memberStore = {
   },
 
   async seed() {
-    if (!(await this.get(TEST_MEMBER.phone))) {
+    const existingTestMember = await this.get(TEST_MEMBER.phone);
+    if (!existingTestMember || (existingTestMember.createdAt === "demo-seed" && existingTestMember.points === 2000)) {
       await this.put({ ...TEST_MEMBER });
     }
   },
@@ -213,8 +233,9 @@ function renderTotals() {
     ? `${formatPhone(state.member.phone)} · 보유 ${points(state.member.points)} · 사용 ${points(state.pointsUsed)}`
     : "회원 확인 전 · 포인트 사용 전";
   elements.memberHeader.hidden = !state.member;
+  elements.historyButton.disabled = !state.member;
   if (state.member) {
-    elements.memberPhoneText.textContent = formatPhone(state.member.phone);
+    elements.memberPhoneText.textContent = `${formatPhone(state.member.phone)} 님`;
     elements.memberPointText.textContent = `보유 포인트 ${points(state.member.points)}`;
   }
 }
@@ -332,8 +353,20 @@ function showToast(message) {
 function clearFlowTimers() {
   window.clearTimeout(state.paymentTimer);
   window.clearInterval(state.countdownTimer);
+  window.clearTimeout(state.modalAutoCloseTimer);
   state.paymentTimer = null;
   state.countdownTimer = null;
+  state.modalAutoCloseTimer = null;
+}
+
+function scannerScreenIsActive() {
+  return elements.modalLayer.hidden;
+}
+
+function focusBarcodeScanner() {
+  if (!scannerScreenIsActive()) return;
+  elements.barcodeScannerInput.value = "";
+  elements.barcodeScannerInput.focus({ preventScroll: true });
 }
 
 function openModal(mode, html) {
@@ -350,10 +383,68 @@ function closeModal() {
   state.modalMode = null;
   elements.modalLayer.hidden = true;
   elements.modalContent.innerHTML = "";
+  window.setTimeout(focusBarcodeScanner, 0);
 }
 
 function modalHeader(kicker, title, description = "") {
   return `<header class="modal-header"><p class="modal-kicker">${kicker}</p><h2 id="modalTitle">${title}</h2>${description ? `<p class="modal-description">${description}</p>` : ""}</header>`;
+}
+
+function openUnknownProductModal(barcode) {
+  openModal("unknown-product", `
+    ${modalHeader("BARCODE ERROR", "등록되지 않은 상품입니다", "관리자에게 문의하세요.")}
+    <div class="modal-body unknown-product-body">
+      <div class="unknown-product-icon" aria-hidden="true">!</div>
+      <p class="unknown-product-code">입력 바코드 <strong>${barcode || "확인 불가"}</strong></p>
+      <p class="helper-note warning">이 안내는 3초 뒤 자동으로 닫힙니다.</p>
+    </div>
+    <div class="modal-actions"><button class="primary-button" type="button" data-action="close">확인</button></div>`);
+  state.modalAutoCloseTimer = window.setTimeout(closeModal, 3000);
+}
+
+function processBarcode(rawValue) {
+  window.clearTimeout(state.barcodeTimer);
+  const barcode = String(rawValue).replace(/\D/g, "");
+  elements.barcodeScannerInput.value = "";
+  if (!barcode) return focusBarcodeScanner();
+  const product = BARCODE_PRODUCTS.get(barcode);
+  if (!product) return openUnknownProductModal(barcode);
+  addProduct(product);
+  window.setTimeout(focusBarcodeScanner, 0);
+}
+
+function parseHistoryDate(value) {
+  return new Date(value.replace(" ", "T"));
+}
+
+function historyRows(rangeDays) {
+  const reference = Math.max(...DEMO_POINT_HISTORY.map((row) => parseHistoryDate(row.dateTime).getTime()));
+  const cutoff = reference - rangeDays * 24 * 60 * 60 * 1000;
+  return DEMO_POINT_HISTORY.filter((row) => parseHistoryDate(row.dateTime).getTime() >= cutoff);
+}
+
+function openPointHistory(rangeDays = state.historyRange) {
+  if (!state.member) return;
+  state.historyRange = rangeDays;
+  const rows = historyRows(rangeDays);
+  const earnedTotal = rows.reduce((sum, row) => sum + row.earned, 0);
+  const usedTotal = rows.reduce((sum, row) => sum + row.used, 0);
+  openModal("point-history", `
+    <div class="point-history-modal">
+      ${modalHeader("POINT HISTORY", "포인트 적립·사용 내역", `${formatPhone(state.member.phone)} 님의 조회 내역입니다.`)}
+      <div class="modal-body">
+        <div class="history-filter" aria-label="조회 기간">
+          ${[[7, "최근 1주일"], [30, "최근 1개월"], [90, "최근 3개월"]].map(([days, label]) => `<button class="${days === rangeDays ? "is-selected" : ""}" type="button" data-history-range="${days}">${label}</button>`).join("")}
+        </div>
+        <div class="history-summary"><span>조회 기간 합계</span><strong class="is-earned">+${points(earnedTotal)}</strong><strong class="is-used">−${points(usedTotal)}</strong></div>
+        <div class="history-table" role="table" aria-label="포인트 내역">
+          <div class="history-row history-head" role="row"><span>일시</span><span>적립/사용구분</span><span>적립</span><span>사용</span></div>
+          ${rows.length ? rows.map((row) => `<div class="history-row" role="row"><time>${row.dateTime}</time><span><b class="history-type ${row.type === "적립" ? "is-earned" : "is-used"}">${row.type}</b></span><strong class="history-earned">${row.earned ? points(row.earned) : "-"}</strong><strong class="history-used">${row.used ? points(row.used) : "-"}</strong></div>`).join("") : '<p class="history-empty">해당 기간의 포인트 내역이 없습니다.</p>'}
+        </div>
+        <p class="history-source-note">시연 데이터 · 실제 연동 시 ERP의 일시, 적립/사용구분, 적립, 사용 컬럼을 표시합니다.</p>
+      </div>
+      <div class="modal-actions"><button class="primary-button" type="button" data-action="close">확인</button></div>
+    </div>`);
 }
 
 function keypadMarkup(kind, options = {}) {
@@ -424,6 +515,11 @@ async function lookupMember() {
   state.member = member;
   state.pointsUsed = 0;
   renderTotals();
+  if (state.flowContext === "header") {
+    closeModal();
+    showToast(`${formatPhone(member.phone)} 님 · 보유 포인트 ${points(member.points)}`);
+    return;
+  }
   openPointUse();
 }
 
@@ -625,7 +721,7 @@ function openResetOptions() {
         <button class="point-choice" type="button" data-action="reset-session"><span>현재 시연만 초기화</span><strong>회원 유지</strong></button>
         <button class="point-choice" type="button" data-action="reset-database"><span>회원 DB까지 초기화</span><strong>테스트 회원 복원</strong></button>
       </div>
-      <p class="helper-note">회원 DB 초기화 시 현장에서 가입한 테스트 회원은 삭제되고 010-1234-1234 / 2,000P만 다시 생성됩니다.</p>
+      <p class="helper-note">회원 DB 초기화 시 현장에서 가입한 테스트 회원은 삭제되고 010-1234-1234 / 4,259P만 다시 생성됩니다.</p>
     </div>
     <div class="modal-actions"><button class="secondary-button" type="button" data-action="close">취소</button></div>`);
 }
@@ -679,6 +775,11 @@ elements.paymentMethods.addEventListener("click", (event) => {
 });
 
 elements.modalContent.addEventListener("click", async (event) => {
+  const historyRangeButton = event.target.closest("[data-history-range]");
+  if (historyRangeButton) {
+    openPointHistory(Number(historyRangeButton.dataset.historyRange));
+    return;
+  }
   const keypadButton = event.target.closest("[data-key]");
   if (keypadButton) {
     handleKeypad(keypadButton.closest("[data-keypad]").dataset.keypad, keypadButton.dataset.key);
@@ -738,7 +839,30 @@ elements.modalContent.addEventListener("click", async (event) => {
 $("#previousCategory").addEventListener("click", () => setCategory(state.categoryIndex - 1));
 $("#nextCategory").addEventListener("click", () => setCategory(state.categoryIndex + 1));
 $("#addBagButton").addEventListener("click", () => addProduct(BAG_PRODUCT));
-$("#resetButton").addEventListener("click", openResetOptions);
+elements.historyButton.addEventListener("click", () => openPointHistory());
+elements.pointLookupButton.addEventListener("click", () => {
+  state.flowContext = "header";
+  openPhoneEntry();
+});
+
+elements.barcodeScannerInput.addEventListener("input", () => {
+  const value = elements.barcodeScannerInput.value.replace(/\D/g, "");
+  elements.barcodeScannerInput.value = value;
+  window.clearTimeout(state.barcodeTimer);
+  if (value.length >= 8) {
+    state.barcodeTimer = window.setTimeout(() => processBarcode(value), 140);
+  }
+});
+
+elements.barcodeScannerInput.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  processBarcode(elements.barcodeScannerInput.value);
+});
+
+elements.barcodeScannerInput.addEventListener("blur", () => {
+  window.setTimeout(focusBarcodeScanner, 20);
+});
 
 $("#clearCartButton").addEventListener("click", () => {
   if (state.cart.size === 0) return showToast("취소할 상품이 없습니다.");
@@ -750,6 +874,7 @@ $("#clearCartButton").addEventListener("click", () => {
 
 $("#checkoutButton").addEventListener("click", () => {
   if (state.cart.size === 0) return showToast("먼저 상품을 담아 주세요.");
+  state.flowContext = "payment";
   openPointLookup();
 });
 
@@ -776,6 +901,7 @@ window.addEventListener("keydown", (event) => {
 });
 
 window.addEventListener("resize", updateScale);
+document.addEventListener("pointerup", () => window.setTimeout(focusBarcodeScanner, 0));
 
 async function initialize() {
   updateScale();
@@ -783,6 +909,7 @@ async function initialize() {
   renderCart();
   renderPaymentMethods();
   await memberStore.open();
+  focusBarcodeScanner();
 }
 
 initialize();

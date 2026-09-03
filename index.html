@@ -5,11 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#e83e35" />
     <title>토마토 키오스크 시연</title>
-    <link rel="stylesheet" href="styles.css?v=20260903-3" />
+    <link rel="stylesheet" href="styles.css?v=20260903-5" />
   </head>
   <body>
     <div class="stage-shell" id="stageShell">
       <main class="kiosk" id="kiosk" aria-label="토마토 키오스크 1080×1920 데모">
+        <input
+          class="barcode-scanner-input"
+          id="barcodeScannerInput"
+          type="text"
+          inputmode="numeric"
+          autocomplete="off"
+          aria-label="시연용 상품 바코드 입력"
+        />
         <header class="topbar">
           <div class="brand" aria-label="토마토 셀프 계산대">
             <strong>Tomato</strong>
@@ -20,11 +28,12 @@
             <strong>토마토마트 본점</strong>
           </div>
           <div class="header-actions">
+            <button class="history-button" id="historyButton" type="button" disabled>내역 조회</button>
             <div class="guide-hint" id="memberHeader" hidden>
               <strong id="memberPhoneText"></strong>
               <span id="memberPointText"></span>
             </div>
-            <button class="header-reset" id="resetButton" type="button">시연 초기화</button>
+            <button class="point-lookup-button" id="pointLookupButton" type="button">포인트 조회</button>
           </div>
         </header>
 
@@ -122,6 +131,6 @@
         </div>
       </main>
     </div>
-    <script src="app.js?v=20260903-3"></script>
+    <script src="app.js?v=20260903-5"></script>
   </body>
 </html>
