@@ -16,7 +16,14 @@ const categories = Object.entries(productSpecs).map(([name, specs], categoryInde
   name,
   products: specs.map((spec, productIndex) => {
     const [productName, price, emoji] = spec.split("|");
-    return { id: `p-${categoryIndex}-${productIndex}`, name: productName, price: Number(price), emoji };
+    const numericPrice = Number(price);
+    return {
+      id: `p-${categoryIndex}-${productIndex}`,
+      name: productName,
+      price: numericPrice,
+      emoji,
+      originalPrice: productIndex >= 4 ? Math.ceil((numericPrice * 1.25) / 100) * 100 : null,
+    };
   }),
 }));
 
@@ -52,6 +59,13 @@ const elements = {
   totalText: $("#totalText"),
   memberSummary: $("#memberSummary"),
   checkoutLabel: $("#checkoutLabel"),
+  checkoutButton: $("#checkoutButton"),
+  paymentDock: $("#paymentDock"),
+  paymentGuideText: $("#paymentGuideText"),
+  amountHint: $("#amountHint"),
+  memberHeader: $("#memberHeader"),
+  memberPhoneText: $("#memberPhoneText"),
+  memberPointText: $("#memberPointText"),
   modalLayer: $("#modalLayer"),
   modalContent: $("#modalContent"),
   toast: $("#toast"),
@@ -162,23 +176,38 @@ function updateScale() {
 
 function renderTotals() {
   if (state.pointsUsed > safeMaxPoints()) state.pointsUsed = safeMaxPoints();
+  const hasProducts = state.cart.size > 0;
   elements.subtotalText.textContent = won(subtotal());
   elements.discountText.textContent = points(state.pointsUsed);
   elements.totalText.textContent = won(total());
-  elements.checkoutLabel.textContent = `${won(total())} 결제하기`;
+  elements.checkoutLabel.textContent = "결제하기";
+  elements.checkoutButton.disabled = !hasProducts;
+  elements.paymentDock.classList.toggle("is-disabled", !hasProducts);
+  elements.paymentGuideText.textContent = hasProducts
+    ? "결제수단을 선택한 뒤 결제하기를 눌러주세요"
+    : "상품을 담으면 결제할 수 있습니다";
+  elements.amountHint.textContent = hasProducts
+    ? "결제하기를 누르면 포인트 확인 단계로 이동합니다"
+    : "상품을 먼저 담아주세요";
+  elements.paymentMethods.querySelectorAll(".payment-method").forEach((button) => {
+    button.disabled = !hasProducts;
+  });
   elements.memberSummary.textContent = state.member
     ? `${formatPhone(state.member.phone)} · 보유 ${points(state.member.points)} · 사용 ${points(state.pointsUsed)}`
     : "회원 확인 전 · 포인트 사용 전";
+  elements.memberHeader.hidden = !state.member;
+  if (state.member) {
+    elements.memberPhoneText.textContent = formatPhone(state.member.phone);
+    elements.memberPointText.textContent = `보유 포인트 ${points(state.member.points)}`;
+  }
 }
 
 function renderCart() {
   elements.cartList.innerHTML = state.cart.size
     ? [...state.cart.values()].map(({ product, quantity }) => `
         <article class="cart-row" data-cart-id="${product.id}">
-          <div class="cart-product">
-            <span class="product-emoji" aria-hidden="true">${product.emoji}</span>
-            <div><div class="cart-product-name">${product.name}</div><span class="cart-product-price">${won(product.price)}</span></div>
-          </div>
+          <div class="cart-product"><div class="cart-product-name">${product.name}</div></div>
+          <div class="cart-unit-price">${won(product.price)}</div>
           <div class="quantity-control" aria-label="${product.name} 수량">
             <button type="button" data-cart-action="decrease" aria-label="수량 감소">−</button>
             <span>${quantity}</span>
@@ -189,7 +218,7 @@ function renderCart() {
             <button class="remove-item" type="button" data-cart-action="remove">삭제</button>
           </div>
         </article>`).join("")
-    : `<div class="empty-cart"><span class="empty-cart-icon" aria-hidden="true">＋</span><strong>담긴 상품이 없습니다</strong><p>오른쪽 상품 카드를 누르면<br />이곳에 자동으로 담깁니다.</p></div>`;
+    : `<div class="empty-cart"><img class="empty-cart-icon" src="assets/scan-product.png" alt="" /><strong>아직 담긴 상품이 없습니다</strong><p>상품 바코드를 스캔하거나<br />오른쪽에서 상품을 직접 선택하세요</p></div>`;
   elements.cartCount.textContent = itemCount().toLocaleString("ko-KR");
   renderTotals();
 }
@@ -200,7 +229,9 @@ function renderCatalog(animate = false) {
     <button class="category-tab ${index === state.categoryIndex ? "is-active" : ""}" type="button" role="tab" aria-selected="${index === state.categoryIndex}" data-category-index="${index}">${item.name}</button>`).join("");
   elements.productGrid.innerHTML = category.products.map((product) => `
     <button class="product-card" type="button" data-product-id="${product.id}">
-      <span class="product-emoji" aria-hidden="true">${product.emoji}</span><strong>${product.name}</strong><span>${won(product.price)}</span>
+      <strong>${product.name}</strong>
+      <span class="product-price">${product.originalPrice ? `<del>${won(product.originalPrice)}</del>` : ""}${won(product.price)}</span>
+      <span class="promotion-slot">${product.originalPrice ? "행사" : ""}</span>
     </button>`).join("");
   elements.activeCategoryName.textContent = category.name;
   elements.categoryPosition.textContent = `${state.categoryIndex + 1} / ${categories.length}`;
@@ -433,7 +464,7 @@ function startPayment(method = state.paymentMethod) {
     : `<p class="amount-focus">결제 금액 <strong>${won(total())}</strong></p>`;
   openModal("processing", `
     ${modalHeader("PAYMENT", visual[0], "잠시만 기다려 주세요. 약 3초 뒤 테스트 결과가 표시됩니다.")}
-    <div class="modal-body">${amount}<img class="payment-visual" src="${visual[1]}" alt="" /><div class="processing-bar" aria-hidden="true"></div><p class="processing-status">${visual[2]}</p></div>
+    <div class="modal-body">${amount}<img class="payment-visual ${method === "card" ? "payment-visual--card" : ""}" src="${visual[1]}" alt="" /><div class="processing-bar" aria-hidden="true"></div><p class="processing-status">${visual[2]}</p></div>
     <div class="modal-actions"><button class="secondary-button" type="button" data-action="cancel-payment">결제 취소</button></div>`);
   state.paymentTimer = window.setTimeout(() => method === "easy" ? openPaymentError() : completePayment(), 3000);
 }
@@ -454,9 +485,9 @@ function openMethodChange() {
     ${modalHeader("PAYMENT METHOD", "결제수단을 변경해 주세요", "수단을 선택하면 유지된 결제 정보로 바로 다시 진행합니다.")}
     <div class="modal-body">
       <div class="change-method-grid">
-        <button class="change-method-card" type="button" data-change-method="card"><span class="method-icon">▰</span><strong>신용카드</strong></button>
-        <button class="change-method-card" type="button" data-change-method="easy"><span class="method-icon">▦</span><strong>간편결제</strong></button>
-        <button class="change-method-card" type="button" data-change-method="cash"><span class="method-icon">₩</span><strong>현금결제</strong></button>
+        <button class="change-method-card" type="button" data-change-method="card"><span class="method-icon card"><img src="assets/payment-card.png" alt="" /></span><strong>신용카드</strong></button>
+        <button class="change-method-card" type="button" data-change-method="easy"><span class="method-icon easy"><img src="assets/payment-easy.png" alt="" /></span><strong>간편결제</strong></button>
+        <button class="change-method-card" type="button" data-change-method="cash"><span class="method-icon cash"><img src="assets/payment-cash.png" alt="" /></span><strong>현금결제</strong></button>
       </div>
       <div class="preserved-state"><strong>유지되는 정보</strong><p>장바구니, 회원 확인, 적용 포인트, 최종 결제금액</p></div>
     </div>
