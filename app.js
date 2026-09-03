@@ -1,260 +1,667 @@
-const products = [
-  { id: "beef", name: "한우 국거리 500g", unit: 18900, price: 14000, qty: 1, discount: 4900 },
-  { id: "coffee", name: "콜드브루 250ml", unit: 2400, price: 1500, qty: 4, discount: 900 },
-  { id: "milk", name: "서울우유 나100% 저지방 칼슘강화 신선우유 기획상품 1L", unit: 3100, price: 1633, qty: 3, discount: 1467 },
-];
+"use strict";
 
-const catalog = [
-  { id: "ramen1", name: "신라면 블랙 멀티 (4봉)", unit: 5780, price: 5780 },
-  { id: "ramen2", name: "쇠고기 미역국 라면 (4봉)", unit: 5480, price: 5480 },
-  { id: "ramen3", name: "일품 해물라면 (4봉)", unit: 4100, price: 4100 },
-  { id: "ramen4", name: "오뚜기 해물 짬뽕 (4봉)", unit: 3400, price: 3400 },
-  { id: "ramen5", name: "육개장 사발면", unit: 1000, price: 800, promo: true },
-  { id: "ramen6", name: "튀김우동 큰사발", unit: 1500, price: 1000, promo: true },
-];
+const TEST_MEMBER = { phone: "01012341234", points: 2000, createdAt: "demo-seed" };
+const productSpecs = {
+  라면: ["신라면|1000|🍜", "진라면 매운맛|950|🍜", "짜파게티|1200|🍝", "불닭볶음면|1300|🌶️", "너구리|1150|🍲", "육개장 사발면|1100|🥣"],
+  음료: ["생수 500ml|900|💧", "콜라 500ml|2200|🥤", "사이다 500ml|2100|🥤", "오렌지 주스|2500|🧃", "아메리카노|2300|☕", "이온음료|2000|🧊"],
+  냉장: ["서울우유|2900|🥛", "딸기 요구르트|1800|🍓", "훈제란 2입|2200|🥚", "컵 과일|3900|🍎", "삼각김밥|1600|🍙", "치즈 샌드위치|3500|🥪"],
+  간식: ["새우깡|1700|🦐", "감자칩|2200|🥔", "초코 쿠키|2500|🍪", "아몬드|3000|🥜", "젤리|1800|🍬", "초콜릿|2100|🍫"],
+  생활: ["미니 물티슈|1500|🧻", "칫솔|2400|🪥", "우산|7000|☂️", "건전지 2입|3500|🔋", "마스크 3입|2000|😷", "휴대용 티슈|1200|🧻"],
+  건강: ["비타민 음료|1400|🍋", "단백질 바|2800|💪", "견과 믹스|2500|🥜", "제로 탄산|1900|🫧", "홍삼 젤리|3200|🟥", "프로틴 음료|3400|🥛"],
+  간편식: ["김치볶음밥|4500|🍛", "치킨 도시락|5900|🍱", "떡볶이|3800|🍢", "핫도그|2900|🌭", "참치 주먹밥|2400|🍙", "크림 파스타|5200|🍝"],
+  반려동물: ["강아지 간식|3500|🐶", "고양이 간식|3300|🐱", "휴대용 물그릇|4900|🥣", "배변 봉투|2200|🐾", "미니 장난감|5500|🎾", "반려동물 물티슈|2800|🧻"],
+};
 
-const initialCart = products.map(item => ({ ...item }));
-let cart = initialCart.map(item => ({ ...item }));
-let selectedMethod = "card";
-let phone = "";
-let pointInput = "";
-let memberPoints = 1243;
-let usedPoints = 0;
-let pendingSignupPhone = "";
+const categories = Object.entries(productSpecs).map(([name, specs], categoryIndex) => ({
+  name,
+  products: specs.map((spec, productIndex) => {
+    const [productName, price, emoji] = spec.split("|");
+    return { id: `p-${categoryIndex}-${productIndex}`, name: productName, price: Number(price), emoji };
+  }),
+}));
 
-const $ = selector => document.querySelector(selector);
-const money = value => `${Math.max(0, Math.round(value)).toLocaleString("ko-KR")}원`;
-const point = value => `${Math.max(0, Math.round(value)).toLocaleString("ko-KR")}P`;
-const total = () => cart.reduce((sum, item) => sum + item.price * item.qty, 0);
-const originalTotal = () => cart.reduce((sum, item) => sum + item.unit * item.qty, 0);
+const BAG_PRODUCT = { id: "bag", name: "쇼핑 봉투", price: 100, emoji: "🛍️" };
+const methodLabels = { card: "신용카드", easy: "간편결제", cash: "현금결제" };
+const state = {
+  cart: new Map(),
+  categoryIndex: 0,
+  paymentMethod: "card",
+  member: null,
+  pointsUsed: 0,
+  phoneInput: "",
+  pointInput: "",
+  modalMode: null,
+  paymentTimer: null,
+  countdownTimer: null,
+  touchStartX: null,
+};
 
-function resizeKiosk() {
-  const scale = Math.min(window.innerWidth / 1280, window.innerHeight / 1920);
-  $("#kiosk").style.transform = `scale(${scale})`;
+const $ = (selector) => document.querySelector(selector);
+const elements = {
+  kiosk: $("#kiosk"),
+  stageShell: $("#stageShell"),
+  cartList: $("#cartList"),
+  cartCount: $("#cartCount"),
+  categoryTabs: $("#categoryTabs"),
+  activeCategoryName: $("#activeCategoryName"),
+  categoryPosition: $("#categoryPosition"),
+  productGrid: $("#productGrid"),
+  paymentMethods: $("#paymentMethods"),
+  subtotalText: $("#subtotalText"),
+  discountText: $("#discountText"),
+  totalText: $("#totalText"),
+  memberSummary: $("#memberSummary"),
+  checkoutLabel: $("#checkoutLabel"),
+  modalLayer: $("#modalLayer"),
+  modalContent: $("#modalContent"),
+  toast: $("#toast"),
+};
+
+const memberStore = {
+  database: null,
+  fallbackKey: "tomato-kiosk-members-v1",
+
+  async open() {
+    if ("indexedDB" in window) {
+      try {
+        this.database = await new Promise((resolve, reject) => {
+          const request = indexedDB.open("tomato-kiosk-demo", 1);
+          request.onupgradeneeded = () => {
+            if (!request.result.objectStoreNames.contains("members")) {
+              request.result.createObjectStore("members", { keyPath: "phone" });
+            }
+          };
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+      } catch (error) {
+        console.warn("IndexedDB를 열지 못해 localStorage로 전환합니다.", error);
+      }
+    }
+    await this.seed();
+  },
+
+  fallbackMembers() {
+    try {
+      return JSON.parse(localStorage.getItem(this.fallbackKey) || "{}");
+    } catch {
+      return {};
+    }
+  },
+
+  async get(phone) {
+    if (!this.database) {
+      return this.fallbackMembers()[phone] || null;
+    }
+    return new Promise((resolve, reject) => {
+      const request = this.database.transaction("members", "readonly").objectStore("members").get(phone);
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error);
+    });
+  },
+
+  async put(member) {
+    if (!this.database) {
+      const members = this.fallbackMembers();
+      members[member.phone] = member;
+      localStorage.setItem(this.fallbackKey, JSON.stringify(members));
+      return;
+    }
+    return new Promise((resolve, reject) => {
+      const request = this.database.transaction("members", "readwrite").objectStore("members").put(member);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  },
+
+  async clear() {
+    if (!this.database) {
+      localStorage.removeItem(this.fallbackKey);
+    } else {
+      await new Promise((resolve, reject) => {
+        const request = this.database.transaction("members", "readwrite").objectStore("members").clear();
+        request.onsuccess = () => resolve();
+        request.onerror = () => reject(request.error);
+      });
+    }
+    await this.seed();
+  },
+
+  async seed() {
+    if (!(await this.get(TEST_MEMBER.phone))) {
+      await this.put({ ...TEST_MEMBER });
+    }
+  },
+};
+
+const won = (value) => `${Math.max(0, value).toLocaleString("ko-KR")}원`;
+const points = (value) => `${Math.max(0, value).toLocaleString("ko-KR")}P`;
+const subtotal = () => [...state.cart.values()].reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+const total = () => Math.max(0, subtotal() - state.pointsUsed);
+const itemCount = () => [...state.cart.values()].reduce((sum, item) => sum + item.quantity, 0);
+const normalizePhone = (value) => String(value).replace(/\D/g, "").slice(0, 11);
+
+function formatPhone(value) {
+  const digits = normalizePhone(value);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
 }
 
-function renderCatalog() {
-  $("#productGrid").innerHTML = catalog.map(item => `
-    <button class="product-card" data-product="${item.id}" type="button">
-      <strong>${item.name}</strong>
-      <span class="price">${money(item.price)}</span>
-      ${item.promo ? '<span class="promo">행사</span>' : '<span></span>'}
-    </button>`).join("");
+function safeMaxPoints() {
+  if (!state.member) return 0;
+  return Math.floor(Math.min(state.member.points, subtotal()) / 50) * 50;
+}
+
+function updateScale() {
+  const scale = Math.min(1, window.innerWidth / 1080);
+  elements.kiosk.style.setProperty("--kiosk-scale", scale);
+  elements.stageShell.style.width = `${1080 * scale}px`;
+  elements.stageShell.style.height = `${1920 * scale}px`;
+}
+
+function renderTotals() {
+  if (state.pointsUsed > safeMaxPoints()) state.pointsUsed = safeMaxPoints();
+  elements.subtotalText.textContent = won(subtotal());
+  elements.discountText.textContent = points(state.pointsUsed);
+  elements.totalText.textContent = won(total());
+  elements.checkoutLabel.textContent = `${won(total())} 결제하기`;
+  elements.memberSummary.textContent = state.member
+    ? `${formatPhone(state.member.phone)} · 보유 ${points(state.member.points)} · 사용 ${points(state.pointsUsed)}`
+    : "회원 확인 전 · 포인트 사용 전";
 }
 
 function renderCart() {
-  const rows = $("#cartRows");
-  rows.innerHTML = cart.map(item => `
-    <div class="cart-row" data-id="${item.id}">
-      <div class="product-info"><strong>${item.name}</strong>${item.unit > item.price ? `<small>행사할인 −${money((item.unit-item.price)*item.qty)}</small>` : ""}</div>
-      <span class="unit">${money(item.unit)}</span>
-      <div class="qty-control"><button data-action="minus" aria-label="${item.name} 수량 감소">−</button><strong>${item.qty}</strong><button data-action="plus" aria-label="${item.name} 수량 증가">+</button></div>
-      <div class="row-amount">${item.unit > item.price ? `<del>${money(item.unit*item.qty)}</del>` : ""}<strong>${money(item.price*item.qty)}</strong></div>
-      <button class="remove" data-action="remove" aria-label="${item.name} 삭제">×</button>
-    </div>`).join("");
-  $("#emptyCart").hidden = cart.length > 0;
-  const qty = cart.reduce((sum,item) => sum + item.qty,0);
-  const discount = originalTotal() - total();
-  $("#totalQty").textContent = `${qty}개`;
-  $("#totalDiscount").textContent = discount ? `−${money(discount)}` : "0원";
-  $("#cartTotal").textContent = money(total());
-  $("#paymentTotal").textContent = money(total());
+  elements.cartList.innerHTML = state.cart.size
+    ? [...state.cart.values()].map(({ product, quantity }) => `
+        <article class="cart-row" data-cart-id="${product.id}">
+          <div class="cart-product">
+            <span class="product-emoji" aria-hidden="true">${product.emoji}</span>
+            <div><div class="cart-product-name">${product.name}</div><span class="cart-product-price">${won(product.price)}</span></div>
+          </div>
+          <div class="quantity-control" aria-label="${product.name} 수량">
+            <button type="button" data-cart-action="decrease" aria-label="수량 감소">−</button>
+            <span>${quantity}</span>
+            <button type="button" data-cart-action="increase" aria-label="수량 증가">＋</button>
+          </div>
+          <div>
+            <div class="cart-line-total">${won(product.price * quantity)}</div>
+            <button class="remove-item" type="button" data-cart-action="remove">삭제</button>
+          </div>
+        </article>`).join("")
+    : `<div class="empty-cart"><span class="empty-cart-icon" aria-hidden="true">＋</span><strong>담긴 상품이 없습니다</strong><p>오른쪽 상품 카드를 누르면<br />이곳에 자동으로 담깁니다.</p></div>`;
+  elements.cartCount.textContent = itemCount().toLocaleString("ko-KR");
+  renderTotals();
 }
 
-function setMethod(method) {
-  selectedMethod = method;
-  document.querySelectorAll(".method").forEach(button => {
-    const selected = button.dataset.method === method;
-    button.classList.toggle("selected", selected);
-    const old = button.querySelector("em:not(.available)");
-    if (old) old.remove();
-    if (selected) button.insertAdjacentHTML("beforeend", '<em>✓ 선택됨</em>');
+function renderCatalog(animate = false) {
+  const category = categories[state.categoryIndex];
+  elements.categoryTabs.innerHTML = categories.map((item, index) => `
+    <button class="category-tab ${index === state.categoryIndex ? "is-active" : ""}" type="button" role="tab" aria-selected="${index === state.categoryIndex}" data-category-index="${index}">${item.name}</button>`).join("");
+  elements.productGrid.innerHTML = category.products.map((product) => `
+    <button class="product-card" type="button" data-product-id="${product.id}">
+      <span class="product-emoji" aria-hidden="true">${product.emoji}</span><strong>${product.name}</strong><span>${won(product.price)}</span>
+    </button>`).join("");
+  elements.activeCategoryName.textContent = category.name;
+  elements.categoryPosition.textContent = `${state.categoryIndex + 1} / ${categories.length}`;
+  if (animate) {
+    elements.productGrid.classList.remove("is-changing");
+    requestAnimationFrame(() => elements.productGrid.classList.add("is-changing"));
+  }
+  requestAnimationFrame(() => elements.categoryTabs.querySelector(".category-tab.is-active")?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" }));
+}
+
+function setCategory(index) {
+  state.categoryIndex = (index + categories.length) % categories.length;
+  renderCatalog(true);
+}
+
+function findProduct(id) {
+  return categories.flatMap((category) => category.products).find((product) => product.id === id);
+}
+
+function addProduct(product) {
+  const current = state.cart.get(product.id);
+  state.cart.set(product.id, { product, quantity: current ? current.quantity + 1 : 1 });
+  renderCart();
+  showToast(`${product.name} 상품을 담았습니다.`);
+}
+
+function changeQuantity(id, amount) {
+  const current = state.cart.get(id);
+  if (!current) return;
+  if (current.quantity + amount <= 0) state.cart.delete(id);
+  else state.cart.set(id, { ...current, quantity: current.quantity + amount });
+  renderCart();
+}
+
+let toastTimer = null;
+function showToast(message) {
+  window.clearTimeout(toastTimer);
+  elements.toast.textContent = message;
+  elements.toast.classList.add("is-visible");
+  toastTimer = window.setTimeout(() => elements.toast.classList.remove("is-visible"), 1900);
+}
+
+function clearFlowTimers() {
+  window.clearTimeout(state.paymentTimer);
+  window.clearInterval(state.countdownTimer);
+  state.paymentTimer = null;
+  state.countdownTimer = null;
+}
+
+function openModal(mode, html) {
+  clearFlowTimers();
+  state.modalMode = mode;
+  elements.modalContent.innerHTML = html;
+  elements.modalLayer.hidden = false;
+  requestAnimationFrame(() => elements.modalContent.querySelector("button, input")?.focus());
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function closeModal() {
+  clearFlowTimers();
+  state.modalMode = null;
+  elements.modalLayer.hidden = true;
+  elements.modalContent.innerHTML = "";
+}
+
+function modalHeader(kicker, title, description = "") {
+  return `<header class="modal-header"><p class="modal-kicker">${kicker}</p><h2 id="modalTitle">${title}</h2>${description ? `<p class="modal-description">${description}</p>` : ""}</header>`;
+}
+
+function keypadMarkup(kind) {
+  return `<div class="keypad" data-keypad="${kind}">
+    ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((number) => `<button type="button" data-key="${number}">${number}</button>`).join("")}
+    <button type="button" data-key="clear">전체삭제</button><button type="button" data-key="0">0</button><button type="button" data-key="backspace" aria-label="한 글자 지우기">⌫</button>
+  </div>`;
+}
+
+function openPointLookup() {
+  state.phoneInput = "";
+  renderPointLookup();
+}
+
+function renderPointLookup() {
+  const formatted = formatPhone(state.phoneInput);
+  openModal("phone", `
+    ${modalHeader("POINT LOOKUP", "휴대폰 번호로 포인트 확인", "가입한 휴대폰 번호를 입력하면 보유 포인트를 확인할 수 있습니다.")}
+    <div class="modal-body">
+      <div class="phone-display ${formatted ? "" : "is-placeholder"}" id="phoneDisplay">${formatted || "010-0000-0000"}</div>
+      ${keypadMarkup("phone")}
+      <button class="secondary-button" style="width: 100%; margin-top: 14px" type="button" data-action="fill-test-phone">테스트 번호 010-1234-1234 입력</button>
+      <p class="helper-note">신규 가입 회원에게는 시연용 포인트 5,000P가 즉시 지급됩니다.</p>
+      <p class="error-message" id="phoneError"></p>
+    </div>
+    <div class="modal-actions three-actions">
+      <button class="secondary-button" type="button" data-action="close">돌아가기</button>
+      <button class="primary-button" type="button" data-action="lookup-member">번호로 확인</button>
+      <button class="secondary-button" type="button" data-action="guest-payment">포인트 없이 결제</button>
+    </div>`);
+}
+
+async function lookupMember() {
+  if (state.phoneInput.length !== 11) {
+    $("#phoneError").textContent = "휴대폰 번호 11자리를 입력해 주세요.";
+    return;
+  }
+  const member = await memberStore.get(state.phoneInput);
+  if (!member) {
+    openMemberNotFound();
+    return;
+  }
+  state.member = member;
+  state.pointsUsed = 0;
+  renderTotals();
+  openPointUse();
+}
+
+function openMemberNotFound() {
+  openModal("not-found", `
+    ${modalHeader("MEMBER NOT FOUND", "가입된 회원을 찾지 못했습니다", `${formatPhone(state.phoneInput)} 번호로 신규 가입하거나 번호를 다시 확인해 주세요.`)}
+    <div class="modal-body"><p class="helper-note warning">신규 가입을 완료하면 테스트용 5,000P가 즉시 지급됩니다.</p></div>
+    <div class="modal-actions three-actions">
+      <button class="secondary-button" type="button" data-action="retry-phone">번호 재입력</button>
+      <button class="primary-button" type="button" data-action="open-signup">신규 회원가입</button>
+      <button class="secondary-button" type="button" data-action="guest-payment">포인트 없이 결제</button>
+    </div>`);
+}
+
+function openSignup() {
+  openModal("signup", `
+    ${modalHeader("NEW MEMBER", "휴대폰 회원가입", `${formatPhone(state.phoneInput)} 번호로 회원 정보를 저장합니다.`)}
+    <div class="modal-body">
+      <div class="point-summary">
+        <div><span>가입 휴대폰</span><strong>${formatPhone(state.phoneInput)}</strong></div>
+        <div><span>즉시 지급</span><strong class="accent-value">5,000P</strong></div>
+      </div>
+      <div class="consent-card">
+        <label><input id="requiredConsent" type="checkbox" /><span>[필수] 회원 서비스 이용 및 개인정보 처리에 동의합니다.</span></label>
+        <p>이 데모에서는 입력한 번호와 포인트만 현재 브라우저에 저장합니다.</p>
+      </div>
+      <p class="error-message" id="signupError"></p>
+    </div>
+    <div class="modal-actions" style="--action-columns: 2">
+      <button class="secondary-button" type="button" data-action="retry-phone">번호 재입력</button>
+      <button class="primary-button" type="button" data-action="complete-signup">회원가입 완료</button>
+    </div>`);
+}
+
+async function completeSignup() {
+  if (!$("#requiredConsent")?.checked) {
+    $("#signupError").textContent = "필수 동의를 확인해 주세요.";
+    return;
+  }
+  const member = { phone: state.phoneInput, points: 5000, createdAt: new Date().toISOString() };
+  await memberStore.put(member);
+  state.member = member;
+  state.pointsUsed = 0;
+  renderTotals();
+  showToast("회원가입 완료 · 5,000P가 지급되었습니다.");
+  openPointUse(true);
+}
+
+function openPointUse(isNewMember = false) {
+  const maximum = safeMaxPoints();
+  openModal("point-use", `
+    ${modalHeader("PHONE MEMBER", "포인트를 사용하시겠어요?", "보유 포인트가 0P인 회원도 이 화면에서 잔액을 확인합니다.")}
+    <div class="modal-body">
+      ${isNewMember ? '<p class="helper-note success" style="margin: 0 0 18px">회원가입 완료 · 5,000P 지급</p>' : ""}
+      <div class="point-summary">
+        <div><span>보유 포인트</span><strong class="accent-value">${points(state.member.points)}</strong></div>
+        <div><span>50P 단위 사용 가능</span><strong>${points(maximum)}</strong></div>
+      </div>
+      <div class="point-choice-list">
+        <button class="point-choice ${state.pointsUsed === 0 ? "is-selected" : ""}" type="button" data-action="select-no-points"><span>사용 안 함</span><strong>0P</strong></button>
+        <button class="point-choice" type="button" data-action="open-direct-points" ${maximum === 0 ? "disabled" : ""}><span>직접 입력</span><strong>50P 단위</strong></button>
+        <button class="point-choice ${state.pointsUsed === maximum && maximum > 0 ? "is-selected" : ""}" type="button" data-action="select-all-points" ${maximum === 0 ? "disabled" : ""}><span>사용 가능 전액</span><strong>${points(maximum)}</strong></button>
+      </div>
+      <p class="helper-note">포인트 적용 후 결제수단은 언제든 변경할 수 있습니다.</p>
+    </div>
+    <div class="modal-actions" style="--action-columns: 2">
+      <button class="secondary-button" type="button" data-action="retry-phone">회원 다시 확인</button>
+      <button class="primary-button" type="button" data-action="apply-points">적용하고 결제 계속</button>
+    </div>`);
+}
+
+function openDirectPoints() {
+  state.pointInput = state.pointsUsed ? String(state.pointsUsed) : "";
+  renderDirectPoints();
+}
+
+function renderDirectPoints(errorMessage = "") {
+  const display = state.pointInput ? points(Number(state.pointInput)) : "0P";
+  openModal("direct-points", `
+    ${modalHeader("POINT INPUT", "사용할 포인트를 입력해 주세요", `50P 단위로 최대 ${points(safeMaxPoints())}까지 사용할 수 있습니다.`)}
+    <div class="modal-body">
+      <div class="point-display ${state.pointInput ? "" : "is-placeholder"}" id="pointDisplay">${display}</div>
+      ${keypadMarkup("point")}
+      <p class="error-message" id="pointError">${errorMessage}</p>
+    </div>
+    <div class="modal-actions" style="--action-columns: 2">
+      <button class="secondary-button" type="button" data-action="back-to-points">취소</button>
+      <button class="primary-button" type="button" data-action="confirm-direct-points">포인트 적용</button>
+    </div>`);
+}
+
+function confirmDirectPoints() {
+  const value = Number(state.pointInput || 0);
+  if (value <= 0) return renderDirectPoints("사용할 포인트를 입력해 주세요.");
+  if (value % 50 !== 0) return renderDirectPoints("포인트는 50P 단위로 입력해 주세요.");
+  if (value > safeMaxPoints()) return renderDirectPoints(`최대 ${points(safeMaxPoints())}까지 사용할 수 있습니다.`);
+  state.pointsUsed = value;
+  renderTotals();
+  openPointUse();
+}
+
+function renderPaymentMethods() {
+  elements.paymentMethods.querySelectorAll(".payment-method").forEach((button) => {
+    button.classList.toggle("is-selected", button.dataset.method === state.paymentMethod);
   });
 }
 
-function showToast(message) {
-  const toast = $("#toast");
-  toast.textContent = message;
-  toast.hidden = false;
-  clearTimeout(showToast.timer);
-  showToast.timer = setTimeout(() => toast.hidden = true, 2200);
+function startPayment(method = state.paymentMethod) {
+  state.paymentMethod = method;
+  renderPaymentMethods();
+  const visual = {
+    card: ["카드를 리더기에 꽂아주세요", "assets/card-reader.png", "카드를 읽고 있습니다."],
+    easy: ["결제 바코드를 스캔해 주세요", "assets/easy-pay-scan.png", "간편결제 승인을 기다리고 있습니다."],
+    cash: ["현금투입구에 돈을 넣어주세요", "assets/cash-slot.png", "투입 금액을 확인하고 있습니다."],
+  }[method];
+  const amount = method === "cash"
+    ? `<div class="cash-breakdown"><div><span>결제 금액</span><strong>${won(total())}</strong></div><div><span>투입 금액</span><strong>${won(total())}</strong></div><div><span>남은 금액</span><strong>0원</strong></div></div>`
+    : `<p class="amount-focus">결제 금액 <strong>${won(total())}</strong></p>`;
+  openModal("processing", `
+    ${modalHeader("PAYMENT", visual[0], "잠시만 기다려 주세요. 약 3초 뒤 테스트 결과가 표시됩니다.")}
+    <div class="modal-body">${amount}<img class="payment-visual" src="${visual[1]}" alt="" /><div class="processing-bar" aria-hidden="true"></div><p class="processing-status">${visual[2]}</p></div>
+    <div class="modal-actions"><button class="secondary-button" type="button" data-action="cancel-payment">결제 취소</button></div>`);
+  state.paymentTimer = window.setTimeout(() => method === "easy" ? openPaymentError() : completePayment(), 3000);
 }
 
-function openModal(content) {
-  $("#modal").innerHTML = content;
-  $("#overlay").hidden = false;
-}
-function closeModal() { $("#overlay").hidden = true; $("#modal").innerHTML = ""; }
-const backHeader = title => `<div class="modal-header"><button class="back" data-modal="close" type="button">← 뒤로</button><h2 id="modalTitle">${title}</h2></div>`;
-
-function showPointEntry() {
-  openModal(`${backHeader("포인트를 확인하시겠습니까?")}
-    <p class="lead">휴대폰 번호로 회원을 확인하면 보유 포인트를 조회하고 사용할 수 있습니다.</p>
-    <div class="notice">상품 특매·이벤트 할인은 로그인과 관계없이 장바구니 금액에 이미 반영되어 있습니다.</div>
-    <div class="choice-grid">
-      <button class="choice primary" data-flow="member-login">휴대폰 번호로 확인</button>
-      <button class="choice soft" data-flow="signup-start">신규 회원가입</button>
-      <button class="choice" data-flow="guest-pay">포인트 없이 결제</button>
-    </div>`);
-}
-
-function formatPhone(raw) {
-  if (!raw) return "010 ···· ····";
-  return raw.replace(/(\d{3})(\d{0,4})(\d{0,4})/, (_,a,b,c) => [a,b,c].filter(Boolean).join(" "));
-}
-
-function phoneModal(mode, preset = "") {
-  phone = preset;
-  const signup = mode === "signup";
-  openModal(`${backHeader(signup ? "회원가입할 휴대폰 번호를 입력해주세요" : "휴대폰 번호를 입력해주세요")}
-    <p class="lead">${signup ? "포인트 적립을 위한 간편 회원가입입니다." : "회원 확인 후 보유 포인트를 조회하고 사용할 수 있습니다."}</p>
-    <div class="notice">시연용 기존 회원: <b>010 1234 5678</b> · 0P 회원: <b>010 0000 0000</b></div>
-    <div id="phoneDisplay" class="phone-display">${formatPhone(phone)}</div>
-    <div class="keypad">${[1,2,3,4,5,6,7,8,9,"전체삭제",0,"←"].map(k => `<button class="key ${typeof k === "string" ? "action" : ""}" data-phone-key="${k}">${k}</button>`).join("")}</div>
-    <div class="modal-actions single"><button class="choice primary" data-flow="${signup ? "signup-confirm" : "check-phone"}">${signup ? "다음" : "확인"}</button></div>`);
-}
-
-function notFound() {
-  openModal(`${backHeader("회원 확인 결과")}
-    <p class="lead"><strong style="font-size:30px;color:#222">등록된 회원을 찾지 못했습니다</strong><br>입력 번호&nbsp; ${formatPhone(phone)}</p>
-    <div class="notice">번호가 맞는지 확인하거나 아래에서 바로 회원가입을 진행해주세요. 회원가입 시 이번 결제부터 포인트가 적립됩니다.</div>
-    <div class="choice-grid">
-      <button class="choice" data-flow="retry-phone">휴대폰 번호 다시 입력</button>
-      <button class="choice primary" data-flow="signup-current">이 번호로 회원가입</button>
-      <button class="choice" data-flow="guest-pay">포인트 없이 결제</button>
-    </div>`);
-}
-
-function signupConfirmation() {
-  pendingSignupPhone = phone;
-  openModal(`${backHeader("회원가입 번호 재확인")}
-    <p class="lead">입력한 번호가 맞습니까?</p>
-    <div class="phone-display">${formatPhone(pendingSignupPhone)}</div>
-    <div class="notice">잘못된 번호로 가입하면 포인트를 찾기 어렵습니다. 번호를 다시 확인해주세요.</div>
-    <div class="modal-actions"><button class="choice" data-flow="edit-signup">번호 다시 입력</button><button class="choice primary" data-flow="complete-signup">번호 확인</button></div>
-    <button class="choice" style="width:100%;margin-top:14px" data-flow="cancel-signup">회원가입 취소</button>`);
-}
-
-function signupComplete() {
-  openModal(`<div class="complete-mark">✓</div><h2 id="modalTitle" style="text-align:center">회원가입이 완료되었습니다</h2>
-    <p class="lead" style="text-align:center">회원 번호&nbsp; ${formatPhone(pendingSignupPhone)}</p>
-    <div class="notice"><strong>포인트 적립 시작</strong><br>이번 결제부터 포인트가 자동 적립됩니다. 신규 회원은 사용할 포인트가 없으므로 바로 결제를 계속합니다.</div>
-    <div class="modal-actions single"><button class="choice primary" data-flow="guest-pay">결제 계속</button></div>`);
-}
-
-function showPoints(points) {
-  memberPoints = points;
-  usedPoints = 0;
-  openModal(`${backHeader("보유 포인트를 사용하시겠습니까?")}
-    <div class="balance"><span>보유 포인트 · 10P 단위 사용</span><strong>${point(points)}</strong></div>
-    <div class="choice-grid" style="grid-template-columns:repeat(3,1fr)">
-      <button class="choice" data-points="none">사용 안 함</button>
-      <button class="choice" data-points="custom" ${points < 10 ? "disabled" : ""}>직접 입력</button>
-      <button class="choice soft" data-points="all" ${points < 10 ? "disabled" : ""}>사용 가능 전액</button>
+function openPaymentError() {
+  openModal("payment-error", `
+    ${modalHeader("APPROVAL ERROR", "결제 승인이 완료되지 않았습니다", "간편결제 승인 시간이 초과되었습니다. 다른 결제수단을 선택하거나 다시 시도해 주세요.")}
+    <div class="modal-body">
+      <img class="status-icon" src="assets/payment-error.png" alt="결제 오류" />
+      <p class="helper-note warning">승인 오류 · 다시 시도하거나 결제수단을 변경해 주세요.</p>
+      <div class="preserved-state"><strong>현재 결제 정보는 그대로 유지됩니다</strong><p>장바구니 ${itemCount()}개 · ${state.member ? formatPhone(state.member.phone) : "비회원"} · 포인트 ${points(state.pointsUsed)} · 결제 ${won(total())}</p></div>
     </div>
-    <div class="point-summary"><div><small>결제금액</small><strong>${money(total())}</strong></div><div><small>포인트 사용</small><strong id="pointsUsed">0P</strong></div><div class="final"><small>최종 결제금액</small><strong id="afterPoints">${money(total())}</strong></div></div>
-    ${points === 0 ? '<div class="notice" style="margin-top:20px">현재 보유 포인트는 0P입니다. 이번 결제 포인트는 결제 완료 후 적립됩니다.</div>' : ""}
-    <div class="modal-actions single"><button class="choice primary" data-flow="apply-points">적용하고 결제 계속</button></div>`);
+    <div class="modal-actions" style="--action-columns: 2"><button class="secondary-button" type="button" data-action="change-payment-method">결제수단 변경</button><button class="primary-button" type="button" data-action="retry-payment">다시 시도</button></div>`);
 }
 
-function selectPoints(value) {
-  usedPoints = value === "all" ? Math.min(Math.floor(memberPoints / 10) * 10, Math.floor(total() / 10) * 10) : 0;
-  document.querySelectorAll("[data-points]").forEach(b => b.classList.toggle("soft", b.dataset.points === value));
-  $("#pointsUsed").textContent = usedPoints ? `−${point(usedPoints)}` : "0P";
-  $("#afterPoints").textContent = money(total() - usedPoints);
+function openMethodChange() {
+  openModal("change-method", `
+    ${modalHeader("PAYMENT METHOD", "결제수단을 변경해 주세요", "수단을 선택하면 유지된 결제 정보로 바로 다시 진행합니다.")}
+    <div class="modal-body">
+      <div class="change-method-grid">
+        <button class="change-method-card" type="button" data-change-method="card"><span class="method-icon">▰</span><strong>신용카드</strong></button>
+        <button class="change-method-card" type="button" data-change-method="easy"><span class="method-icon">▦</span><strong>간편결제</strong></button>
+        <button class="change-method-card" type="button" data-change-method="cash"><span class="method-icon">₩</span><strong>현금결제</strong></button>
+      </div>
+      <div class="preserved-state"><strong>유지되는 정보</strong><p>장바구니, 회원 확인, 적용 포인트, 최종 결제금액</p></div>
+    </div>
+    <div class="modal-actions"><button class="secondary-button" type="button" data-action="back-to-error">이전 오류 화면</button></div>`);
 }
 
-function pointInputModal() {
-  pointInput = "";
-  openModal(`${backHeader("사용할 포인트를 입력해주세요")}
-    <div class="balance"><span>보유 포인트 · 10P 단위 사용</span><strong>${point(memberPoints)}</strong></div>
-    <div id="pointDisplay" class="point-display">0P</div><p id="pointError" class="lead" style="color:#d52a1e;min-height:32px"></p>
-    <div class="keypad">${[1,2,3,4,5,6,7,8,9,"00",0,"⌫"].map(k => `<button class="key ${typeof k === "string" ? "action" : ""}" data-point-key="${k}">${k}</button>`).join("")}</div>
-    <div class="modal-actions"><button class="choice" data-flow="clear-points">초기화</button><button class="choice primary" data-flow="confirm-custom-points">포인트 적용</button></div>`);
-}
-
-function processing() {
-  const data = {
-    card: ["신용카드 결제", "카드를 리더기에 꽂아주세요", "▰", "카드를 기다리고 있습니다"],
-    easy: ["간편결제 · 바코드", "결제 바코드를 스캔해주세요", "▦", "바코드를 기다리고 있습니다"],
-    cash: ["현금결제", "현금투입구에 돈을 넣어주세요", "▣", "현재 투입금액 0원"],
-  }[selectedMethod];
-  openModal(`<div class="processing"><div class="processing-icon">${data[2]}</div><h2 id="modalTitle">${data[0]}</h2><p class="lead">${data[1]}</p>
-    <div class="balance"><span>결제금액</span><strong>${money(total()-usedPoints)}</strong></div><p class="lead" style="margin-top:22px">${data[3]}</p></div>
-    <button class="choice" style="width:100%" data-flow="cancel-payment">${selectedMethod === "cash" ? "결제 취소 · 투입금 반환" : "결제 취소"}</button>
-    <div class="demo-control"><small>시연 제어 — 실제 기기에서는 VAN 또는 현금 장치 결과에 따라 자동 이동합니다.</small><div class="modal-actions"><button class="choice" data-flow="payment-error">승인 오류 시연</button><button class="choice primary" data-flow="payment-success">승인 성공 시연</button></div></div>`);
-}
-
-function paymentError() {
-  openModal(`<h2 id="modalTitle">결제를 완료하지 못했습니다</h2><p class="lead">결제사 통신 오류가 발생했습니다.</p>
-    <div class="error-box">승인 결과 조회 완료 · 미승인 확인<br>VAN 통신 오류 | 오류코드 예시: VAN-001</div>
-    <div class="notice" style="margin-top:20px">장바구니와 할인 정보, 회원 확인·포인트 적용 상태는 그대로 유지됩니다.</div>
-    <div class="modal-actions"><button class="choice" data-flow="change-method">결제수단 변경</button><button class="choice primary" data-flow="retry-payment">다시 시도</button></div>`);
-}
-
-function paymentComplete() {
+async function completePayment() {
+  if (state.member && state.pointsUsed > 0) {
+    state.member = { ...state.member, points: Math.max(0, state.member.points - state.pointsUsed) };
+    await memberStore.put(state.member);
+  }
+  openModal("complete", `
+    ${modalHeader("PAYMENT COMPLETE", "결제가 완료되었습니다", "이용해 주셔서 감사합니다.")}
+    <div class="modal-body">
+      <img class="status-icon" src="assets/payment-success.png" alt="결제 완료" />
+      <p class="amount-focus">최종 결제금액 <strong>${won(total())}</strong></p>
+      <p class="helper-note success">${methodLabels[state.paymentMethod]} 결제 승인 완료${state.pointsUsed ? ` · ${points(state.pointsUsed)} 사용` : ""}</p>
+      <p class="countdown"><span id="countdownNumber">8</span>초 뒤 처음 화면으로 돌아갑니다.</p>
+    </div>
+    <div class="modal-actions" style="--action-columns: 2"><button class="secondary-button" type="button" data-action="finish-without-receipt">영수증 없이 완료</button><button class="primary-button" type="button" data-action="finish-with-receipt">영수증 출력</button></div>`);
   let seconds = 8;
-  openModal(`<div class="complete-mark">✓</div><h2 id="modalTitle" style="text-align:center">결제가 완료되었습니다</h2><p class="lead" style="text-align:center">카드와 구매하신 상품을 확인해주세요</p>
-    <div class="point-summary"><div class="final"><small>최종 결제금액</small><strong>${money(total()-usedPoints)}</strong></div>${usedPoints ? `<div><small>포인트 사용</small><strong>${point(usedPoints)}</strong></div>` : ""}</div>
-    <div class="receipt-actions"><button class="choice" data-flow="finish">영수증 없이 완료</button><button class="choice primary" data-flow="print">영수증 출력</button></div>
-    <p id="countdown" class="lead" style="text-align:center;margin-top:24px">${seconds}초 후 처음 화면으로 돌아갑니다</p>`);
-  clearInterval(paymentComplete.timer);
-  paymentComplete.timer = setInterval(() => {
+  state.countdownTimer = window.setInterval(() => {
     seconds -= 1;
-    if (seconds <= 0) { clearInterval(paymentComplete.timer); resetDemo(); }
-    else if ($("#countdown")) $("#countdown").textContent = `${seconds}초 후 처음 화면으로 돌아갑니다`;
-  },1000);
+    if ($("#countdownNumber")) $("#countdownNumber").textContent = seconds;
+    if (seconds <= 0) resetDemo(false);
+  }, 1000);
 }
 
-function resetDemo() {
-  clearInterval(paymentComplete.timer);
-  cart = initialCart.map(item => ({ ...item })); selectedMethod = "card"; usedPoints = 0; phone = ""; pointInput = "";
-  closeModal(); setMethod("card"); renderCart(); showToast("시연 화면을 처음 상태로 되돌렸습니다");
+function resetDemo(showMessage = true) {
+  closeModal();
+  state.cart.clear();
+  state.member = null;
+  state.pointsUsed = 0;
+  state.phoneInput = "";
+  state.pointInput = "";
+  state.paymentMethod = "card";
+  state.categoryIndex = 0;
+  renderCart();
+  renderCatalog();
+  renderPaymentMethods();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  if (showMessage) showToast("장바구니와 결제 상태를 초기화했습니다.");
 }
 
-document.addEventListener("click", event => {
-  const productButton = event.target.closest("[data-product]");
-  if (productButton) {
-    const item = catalog.find(p => p.id === productButton.dataset.product);
-    const existing = cart.find(p => p.id === item.id);
-    existing ? existing.qty++ : cart.push({ ...item, qty: 1, discount: item.unit-item.price });
-    renderCart(); showToast(`${item.name}을(를) 담았습니다`); return;
+function openResetOptions() {
+  openModal("reset", `
+    ${modalHeader("DEMO RESET", "시연 상태를 초기화할까요?", "필요한 범위만 선택할 수 있습니다.")}
+    <div class="modal-body">
+      <div class="point-choice-list">
+        <button class="point-choice" type="button" data-action="reset-session"><span>현재 시연만 초기화</span><strong>회원 유지</strong></button>
+        <button class="point-choice" type="button" data-action="reset-database"><span>회원 DB까지 초기화</span><strong>테스트 회원 복원</strong></button>
+      </div>
+      <p class="helper-note">회원 DB 초기화 시 현장에서 가입한 테스트 회원은 삭제되고 010-1234-1234 / 2,000P만 다시 생성됩니다.</p>
+    </div>
+    <div class="modal-actions"><button class="secondary-button" type="button" data-action="close">취소</button></div>`);
+}
+
+function handleKeypad(kind, key) {
+  if (kind === "phone") {
+    if (key === "clear") state.phoneInput = "";
+    else if (key === "backspace") state.phoneInput = state.phoneInput.slice(0, -1);
+    else if (state.phoneInput.length < 11) state.phoneInput += key;
+    renderPointLookup();
+    return;
   }
-  const rowButton = event.target.closest(".cart-row button");
-  if (rowButton) {
-    const id = rowButton.closest(".cart-row").dataset.id; const item = cart.find(p => p.id === id);
-    if (rowButton.dataset.action === "plus") item.qty++;
-    if (rowButton.dataset.action === "minus") item.qty = Math.max(1,item.qty-1);
-    if (rowButton.dataset.action === "remove") cart = cart.filter(p => p.id !== id);
-    renderCart(); return;
-  }
-  const method = event.target.closest("[data-method]"); if (method) { setMethod(method.dataset.method); return; }
-  const phoneKey = event.target.closest("[data-phone-key]");
-  if (phoneKey) { const key=phoneKey.dataset.phoneKey; if(key==="전체삭제") phone=""; else if(key==="←") phone=phone.slice(0,-1); else if(phone.length<11) phone+=key; $("#phoneDisplay").textContent=formatPhone(phone); return; }
-  const pointKey = event.target.closest("[data-point-key]");
-  if (pointKey) { const key=pointKey.dataset.pointKey; if(key==="⌫") pointInput=pointInput.slice(0,-1); else if(pointInput.length<7) pointInput+=key; $("#pointDisplay").textContent=point(Number(pointInput||0)); $("#pointError").textContent=""; return; }
-  const pointChoice = event.target.closest("[data-points]"); if(pointChoice) { if(pointChoice.dataset.points==="custom") pointInputModal(); else selectPoints(pointChoice.dataset.points); return; }
-  const flow = event.target.closest("[data-flow]")?.dataset.flow;
-  if (!flow) return;
-  const flows = {
-    "member-login":()=>phoneModal("login"), "signup-start":()=>phoneModal("signup"), "guest-pay":processing,
-    "check-phone":()=>{ if(phone.length!==11) return showToast("휴대폰 번호 11자리를 입력해주세요"); if(phone==="01012345678") showPoints(1243); else if(phone==="01000000000") showPoints(0); else notFound(); },
-    "retry-phone":()=>phoneModal("login"), "signup-current":()=>{ pendingSignupPhone=phone; signupConfirmation(); },
-    "signup-confirm":()=>{ if(phone.length!==11) return showToast("휴대폰 번호 11자리를 입력해주세요"); signupConfirmation(); },
-    "edit-signup":()=>phoneModal("signup",pendingSignupPhone), "complete-signup":signupComplete, "cancel-signup":showPointEntry,
-    "apply-points":processing, "clear-points":()=>{pointInput="";$("#pointDisplay").textContent="0P";$("#pointError").textContent="";},
-    "confirm-custom-points":()=>{const value=Number(pointInput||0);if(value%10!==0)return $("#pointError").textContent="10P 단위로 입력해주세요. 1의 자리 숫자를 0으로 바꿔주세요.";if(value>memberPoints)return $("#pointError").textContent="보유 포인트보다 많이 입력할 수 없습니다.";usedPoints=Math.min(value,total());processing();},
-    "cancel-payment":closeModal, "payment-error":paymentError, "payment-success":paymentComplete,
-    "change-method":closeModal, "retry-payment":processing, "finish":resetDemo, "print":()=>{showToast("영수증을 출력했습니다");setTimeout(resetDemo,900);}
-  };
-  flows[flow]?.();
+  if (key === "clear") state.pointInput = "";
+  else if (key === "backspace") state.pointInput = state.pointInput.slice(0, -1);
+  else if (state.pointInput.length < 7) state.pointInput = `${state.pointInput}${key}`.replace(/^0+/, "");
+  renderDirectPoints();
+}
+
+elements.productGrid.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-product-id]");
+  if (!button) return;
+  const product = findProduct(button.dataset.productId);
+  if (product) addProduct(product);
 });
 
-$("#cartRows").addEventListener("click", () => {});
-$("#startPayment").addEventListener("click", () => cart.length ? showPointEntry() : showToast("상품을 먼저 담아주세요"));
-$("#addBag").addEventListener("click", () => { const bag=cart.find(p=>p.id==="bag"); bag?bag.qty++:cart.push({id:"bag",name:"일반 봉투",unit:100,price:100,qty:1,discount:0});renderCart();showToast("일반 봉투 1개가 장바구니에 추가되었습니다"); });
-$("#clearCart").addEventListener("click", () => { cart=[];renderCart();showToast("장바구니를 비웠습니다"); });
-$("#resetDemo").addEventListener("click", resetDemo);
-$("#overlay").addEventListener("click", event => { if(event.target.matches('[data-modal="close"]')) closeModal(); });
-window.addEventListener("resize", resizeKiosk);
-renderCatalog(); renderCart(); resizeKiosk();
+elements.categoryTabs.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-category-index]");
+  if (button) setCategory(Number(button.dataset.categoryIndex));
+});
+
+elements.cartList.addEventListener("click", (event) => {
+  const actionButton = event.target.closest("[data-cart-action]");
+  const row = event.target.closest("[data-cart-id]");
+  if (!actionButton || !row) return;
+  const id = row.dataset.cartId;
+  if (actionButton.dataset.cartAction === "increase") changeQuantity(id, 1);
+  else if (actionButton.dataset.cartAction === "decrease") changeQuantity(id, -1);
+  else {
+    state.cart.delete(id);
+    renderCart();
+  }
+});
+
+elements.paymentMethods.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-method]");
+  if (!button) return;
+  state.paymentMethod = button.dataset.method;
+  renderPaymentMethods();
+});
+
+elements.modalContent.addEventListener("click", async (event) => {
+  const keypadButton = event.target.closest("[data-key]");
+  if (keypadButton) {
+    handleKeypad(keypadButton.closest("[data-keypad]").dataset.keypad, keypadButton.dataset.key);
+    return;
+  }
+  const methodButton = event.target.closest("[data-change-method]");
+  if (methodButton) {
+    startPayment(methodButton.dataset.changeMethod);
+    return;
+  }
+  const action = event.target.closest("[data-action]")?.dataset.action;
+  if (!action) return;
+
+  if (action === "close" || action === "cancel-payment") closeModal();
+  else if (action === "fill-test-phone") {
+    state.phoneInput = TEST_MEMBER.phone;
+    renderPointLookup();
+  } else if (action === "lookup-member") await lookupMember();
+  else if (action === "retry-phone") openPointLookup();
+  else if (action === "open-signup") openSignup();
+  else if (action === "complete-signup") await completeSignup();
+  else if (action === "guest-payment") {
+    state.member = null;
+    state.pointsUsed = 0;
+    renderTotals();
+    startPayment();
+  } else if (action === "select-no-points") {
+    state.pointsUsed = 0;
+    renderTotals();
+    openPointUse();
+  } else if (action === "select-all-points") {
+    state.pointsUsed = safeMaxPoints();
+    renderTotals();
+    openPointUse();
+  } else if (action === "open-direct-points") openDirectPoints();
+  else if (action === "back-to-points") openPointUse();
+  else if (action === "confirm-direct-points") confirmDirectPoints();
+  else if (action === "apply-points") startPayment();
+  else if (action === "change-payment-method") openMethodChange();
+  else if (action === "retry-payment") startPayment(state.paymentMethod);
+  else if (action === "back-to-error") openPaymentError();
+  else if (action === "finish-with-receipt") {
+    resetDemo(false);
+    showToast("영수증 출력 요청을 전송했습니다.");
+  } else if (action === "finish-without-receipt") resetDemo(false);
+  else if (action === "reset-session") resetDemo();
+  else if (action === "reset-database") {
+    await memberStore.clear();
+    resetDemo(false);
+    showToast("회원 DB를 초기화하고 테스트 회원을 복원했습니다.");
+  }
+});
+
+$("#previousCategory").addEventListener("click", () => setCategory(state.categoryIndex - 1));
+$("#nextCategory").addEventListener("click", () => setCategory(state.categoryIndex + 1));
+$("#addBagButton").addEventListener("click", () => addProduct(BAG_PRODUCT));
+$("#resetButton").addEventListener("click", openResetOptions);
+
+$("#clearCartButton").addEventListener("click", () => {
+  if (state.cart.size === 0) return showToast("취소할 상품이 없습니다.");
+  state.cart.clear();
+  state.pointsUsed = 0;
+  renderCart();
+  showToast("장바구니 상품을 모두 취소했습니다.");
+});
+
+$("#checkoutButton").addEventListener("click", () => {
+  if (state.cart.size === 0) return showToast("먼저 상품을 담아 주세요.");
+  openPointLookup();
+});
+
+elements.productGrid.addEventListener("pointerdown", (event) => {
+  state.touchStartX = event.clientX;
+});
+
+elements.productGrid.addEventListener("pointerup", (event) => {
+  if (state.touchStartX === null) return;
+  const distance = event.clientX - state.touchStartX;
+  state.touchStartX = null;
+  if (Math.abs(distance) > 60) setCategory(state.categoryIndex + (distance < 0 ? 1 : -1));
+});
+
+window.addEventListener("keydown", (event) => {
+  if (elements.modalLayer.hidden) return;
+  if (event.key === "Escape" && state.modalMode !== "processing") return closeModal();
+  const isPhone = state.modalMode === "phone";
+  const isPoint = state.modalMode === "direct-points";
+  if (!isPhone && !isPoint) return;
+  if (/^\d$/.test(event.key)) handleKeypad(isPhone ? "phone" : "point", event.key);
+  else if (event.key === "Backspace") handleKeypad(isPhone ? "phone" : "point", "backspace");
+  else if (event.key === "Enter") isPhone ? lookupMember() : confirmDirectPoints();
+});
+
+window.addEventListener("resize", updateScale);
+
+async function initialize() {
+  updateScale();
+  renderCatalog();
+  renderCart();
+  renderPaymentMethods();
+  await memberStore.open();
+}
+
+initialize();
