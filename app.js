@@ -203,21 +203,59 @@ function renderTotals() {
 }
 
 function renderCart() {
+  const cartItems = [...state.cart.values()];
+  const listPriceTotal = cartItems.reduce(
+    (sum, { product, quantity }) => sum + (product.originalPrice || product.price) * quantity,
+    0,
+  );
+  const productDiscount = Math.max(0, listPriceTotal - subtotal());
+  const cartSummary = `
+    <section class="cart-summary" aria-label="결제 요약">
+      <div class="cart-summary-heading">
+        <strong>결제 요약</strong>
+        ${productDiscount ? '<span>할인 적용 완료</span>' : ""}
+      </div>
+      <div class="cart-summary-metrics">
+        <div class="summary-metric">
+          <span>총 수량</span>
+          <strong>${itemCount().toLocaleString("ko-KR")}개</strong>
+        </div>
+        <div class="summary-metric summary-metric--discount">
+          <span>상품 할인</span>
+          <strong>−${won(productDiscount)}</strong>
+        </div>
+        <div class="summary-metric summary-metric--final">
+          <span>예상 결제금액</span>
+          <strong>${won(subtotal())}</strong>
+        </div>
+      </div>
+    </section>`;
+
   elements.cartList.innerHTML = state.cart.size
-    ? [...state.cart.values()].map(({ product, quantity }) => `
+    ? `${cartItems.map(({ product, quantity }) => {
+        const originalUnitPrice = product.originalPrice || product.price;
+        const originalLinePrice = originalUnitPrice * quantity;
+        const linePrice = product.price * quantity;
+        const discount = originalLinePrice - linePrice;
+        return `
         <article class="cart-row" data-cart-id="${product.id}">
-          <div class="cart-product"><div class="cart-product-name">${product.name}</div></div>
-          <div class="cart-unit-price">${won(product.price)}</div>
+          <div class="cart-product">
+            <div class="cart-product-name">${product.name}</div>
+            ${discount ? `<span class="cart-promotion">행사할인&nbsp; −${won(discount)}</span>` : ""}
+          </div>
+          <div class="cart-unit-price">${won(originalUnitPrice)}</div>
           <div class="quantity-control" aria-label="${product.name} 수량">
             <button type="button" data-cart-action="decrease" aria-label="수량 감소">−</button>
             <span>${quantity}</span>
-            <button type="button" data-cart-action="increase" aria-label="수량 증가">＋</button>
+            <button type="button" data-cart-action="increase" aria-label="수량 증가">+</button>
           </div>
-          <div>
-            <div class="cart-line-total">${won(product.price * quantity)}</div>
-            <button class="remove-item" type="button" data-cart-action="remove">삭제</button>
+          <div class="cart-amount">
+            ${discount ? `<del>${won(originalLinePrice)}</del>` : ""}
+            <div class="cart-line-total ${discount ? "is-discounted" : ""}">${won(linePrice)}</div>
           </div>
-        </article>`).join("")
+          <button class="remove-item" type="button" data-cart-action="remove" aria-label="${product.name} 삭제">×</button>
+        </article>`;
+      }).join("")}${cartSummary}`
     : `<div class="empty-cart"><img class="empty-cart-icon" src="assets/scan-product.png" alt="" /><strong>아직 담긴 상품이 없습니다</strong><p>상품 바코드를 스캔하거나<br />오른쪽에서 상품을 직접 선택하세요</p></div>`;
   elements.cartCount.textContent = itemCount().toLocaleString("ko-KR");
   renderTotals();
@@ -301,14 +339,39 @@ function modalHeader(kicker, title, description = "") {
   return `<header class="modal-header"><p class="modal-kicker">${kicker}</p><h2 id="modalTitle">${title}</h2>${description ? `<p class="modal-description">${description}</p>` : ""}</header>`;
 }
 
-function keypadMarkup(kind) {
+function keypadMarkup(kind, options = {}) {
+  const clearLabel = options.clearLabel || "전체삭제";
+  const backspaceLabel = options.backspaceLabel || "←";
+  const zeroPrefix = options.doubleZero ? '<button type="button" data-key="00">00</button>' : `<button type="button" data-key="clear">${clearLabel}</button>`;
   return `<div class="keypad" data-keypad="${kind}">
     ${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((number) => `<button type="button" data-key="${number}">${number}</button>`).join("")}
-    <button type="button" data-key="clear">전체삭제</button><button type="button" data-key="0">0</button><button type="button" data-key="backspace" aria-label="한 글자 지우기">⌫</button>
+    ${zeroPrefix}<button type="button" data-key="0">0</button><button type="button" data-key="backspace" aria-label="한 글자 지우기">${backspaceLabel}</button>
   </div>`;
 }
 
 function openPointLookup() {
+  openModal("point-decision", `
+    <div class="figma-modal point-decision-modal">
+      <button class="figma-back" type="button" data-action="close">뒤로</button>
+      <h2 id="modalTitle">포인트를 확인하시겠습니까?</h2>
+      <div class="benefit-promise">
+        <span class="benefit-icon">✓</span>
+        <div>
+          <strong>휴대폰 번호로 회원을 확인하면</strong>
+          <b>보유 포인트 조회·사용 가능</b>
+          <p>상품 특매·이벤트 할인은 로그인과 관계없이 장바구니 금액에 이미 반영되어 있습니다.</p>
+        </div>
+      </div>
+      <div class="figma-action-stack">
+        <button class="figma-primary" type="button" data-action="open-phone-entry">휴대폰 번호로 확인</button>
+        <button class="figma-secondary" type="button" data-action="open-phone-entry">신규 회원가입</button>
+        <button class="figma-secondary" type="button" data-action="guest-payment">포인트 없이 결제</button>
+      </div>
+      <p class="figma-footnote">다음 화면에서 휴대폰 번호를 입력하면 보유 포인트를 확인할 수 있습니다.</p>
+    </div>`);
+}
+
+function openPhoneEntry() {
   state.phoneInput = "";
   renderPointLookup();
 }
@@ -316,18 +379,18 @@ function openPointLookup() {
 function renderPointLookup() {
   const formatted = formatPhone(state.phoneInput);
   openModal("phone", `
-    ${modalHeader("POINT LOOKUP", "휴대폰 번호로 포인트 확인", "가입한 휴대폰 번호를 입력하면 보유 포인트를 확인할 수 있습니다.")}
-    <div class="modal-body">
-      <div class="phone-display ${formatted ? "" : "is-placeholder"}" id="phoneDisplay">${formatted || "010-0000-0000"}</div>
-      ${keypadMarkup("phone")}
-      <button class="secondary-button" style="width: 100%; margin-top: 14px" type="button" data-action="fill-test-phone">테스트 번호 010-1234-1234 입력</button>
-      <p class="helper-note">신규 가입 회원에게는 시연용 포인트 5,000P가 즉시 지급됩니다.</p>
-      <p class="error-message" id="phoneError"></p>
-    </div>
-    <div class="modal-actions three-actions">
-      <button class="secondary-button" type="button" data-action="close">돌아가기</button>
-      <button class="primary-button" type="button" data-action="lookup-member">번호로 확인</button>
-      <button class="secondary-button" type="button" data-action="guest-payment">포인트 없이 결제</button>
+    <div class="figma-modal phone-login-modal">
+      <button class="figma-back" type="button" data-action="back-to-point-decision">뒤로</button>
+      <h2 id="modalTitle">휴대폰 번호를 입력해주세요</h2>
+      <p class="figma-subtitle">회원 확인 후 보유 포인트를 조회하고 사용할 수 있습니다.</p>
+      <section class="phone-login-panel">
+        <h3>휴대폰 번호로 회원 확인</h3>
+        <p>로그인 후 보유 포인트를 조회하고 사용할 수 있습니다.<br />특매·이벤트 할인은 이미 반영되어 있습니다.</p>
+        <div class="phone-display ${formatted ? "" : "is-placeholder"}" id="phoneDisplay">${formatted || "010 ···· ····"}</div>
+        ${keypadMarkup("phone")}
+        <p class="error-message" id="phoneError"></p>
+        <button class="figma-dark" type="button" data-action="lookup-member">확인</button>
+      </section>
     </div>`);
 }
 
@@ -349,69 +412,73 @@ async function lookupMember() {
 
 function openMemberNotFound() {
   openModal("not-found", `
-    ${modalHeader("MEMBER NOT FOUND", "가입된 회원을 찾지 못했습니다", `${formatPhone(state.phoneInput)} 번호로 신규 가입하거나 번호를 다시 확인해 주세요.`)}
-    <div class="modal-body"><p class="helper-note warning">신규 가입을 완료하면 테스트용 5,000P가 즉시 지급됩니다.</p></div>
-    <div class="modal-actions three-actions">
-      <button class="secondary-button" type="button" data-action="retry-phone">번호 재입력</button>
-      <button class="primary-button" type="button" data-action="open-signup">신규 회원가입</button>
-      <button class="secondary-button" type="button" data-action="guest-payment">포인트 없이 결제</button>
-    </div>`);
-}
-
-function openSignup() {
-  openModal("signup", `
-    ${modalHeader("NEW MEMBER", "휴대폰 회원가입", `${formatPhone(state.phoneInput)} 번호로 회원 정보를 저장합니다.`)}
-    <div class="modal-body">
-      <div class="point-summary">
-        <div><span>가입 휴대폰</span><strong>${formatPhone(state.phoneInput)}</strong></div>
-        <div><span>즉시 지급</span><strong class="accent-value">5,000P</strong></div>
+    <div class="figma-modal member-not-found-modal">
+      <button class="figma-back" type="button" data-action="retry-phone">뒤로</button>
+      <section class="not-found-alert">
+        <span>회원 확인 결과</span>
+        <h2 id="modalTitle">등록된 회원을 찾지 못했습니다</h2>
+        <strong>입력 번호&nbsp; ${formatPhone(state.phoneInput).replaceAll("-", " ")}</strong>
+        <p>번호가 맞는지 확인하거나 아래에서 바로 회원가입을 진행해주세요.</p>
+      </section>
+      <section class="signup-benefit">
+        <span class="benefit-icon">i</span>
+        <div><strong>지금 바로 간편 회원가입</strong><p>휴대폰 번호만 확인하면 가입 완료 · 시연용 5,000P가 즉시 지급됩니다.</p></div>
+      </section>
+      <div class="signup-decision-row">
+        <button class="figma-secondary" type="button" data-action="retry-phone">휴대폰 번호 다시 입력</button>
+        <button class="figma-primary" type="button" data-action="complete-signup">이 번호로 회원가입</button>
       </div>
-      <div class="consent-card">
-        <label><input id="requiredConsent" type="checkbox" /><span>[필수] 회원 서비스 이용 및 개인정보 처리에 동의합니다.</span></label>
-        <p>이 데모에서는 입력한 번호와 포인트만 현재 브라우저에 저장합니다.</p>
-      </div>
-      <p class="error-message" id="signupError"></p>
-    </div>
-    <div class="modal-actions" style="--action-columns: 2">
-      <button class="secondary-button" type="button" data-action="retry-phone">번호 재입력</button>
-      <button class="primary-button" type="button" data-action="complete-signup">회원가입 완료</button>
+      <button class="figma-secondary figma-full" type="button" data-action="guest-payment">포인트 없이 결제</button>
     </div>`);
 }
 
 async function completeSignup() {
-  if (!$("#requiredConsent")?.checked) {
-    $("#signupError").textContent = "필수 동의를 확인해 주세요.";
-    return;
-  }
   const member = { phone: state.phoneInput, points: 5000, createdAt: new Date().toISOString() };
   await memberStore.put(member);
   state.member = member;
   state.pointsUsed = 0;
   renderTotals();
-  showToast("회원가입 완료 · 5,000P가 지급되었습니다.");
-  openPointUse(true);
+  openSignupComplete();
 }
 
-function openPointUse(isNewMember = false) {
+function openSignupComplete() {
+  openModal("signup-complete", `
+    <div class="figma-modal signup-complete-modal">
+      <section class="signup-complete-summary">
+        <span>회원가입 완료</span>
+        <h2 id="modalTitle">회원가입이 완료되었습니다</h2>
+        <strong>회원 번호&nbsp; ${formatPhone(state.phoneInput).replaceAll("-", " ")}</strong>
+        <p>시연용 포인트 5,000P가 즉시 지급되었습니다.</p>
+      </section>
+      <section class="signup-benefit signup-benefit--success">
+        <span class="benefit-icon">i</span>
+        <div><strong>포인트 지급 완료 · 5,000P</strong><p>3초 뒤 선택한 결제수단으로 자동 이동합니다.</p></div>
+      </section>
+      <button class="figma-primary figma-full" type="button" data-action="continue-after-signup">결제 계속</button>
+    </div>`);
+  state.paymentTimer = window.setTimeout(() => startPayment(), 3000);
+}
+
+function openPointUse() {
   const maximum = safeMaxPoints();
   openModal("point-use", `
-    ${modalHeader("PHONE MEMBER", "포인트를 사용하시겠어요?", "보유 포인트가 0P인 회원도 이 화면에서 잔액을 확인합니다.")}
-    <div class="modal-body">
-      ${isNewMember ? '<p class="helper-note success" style="margin: 0 0 18px">회원가입 완료 · 5,000P 지급</p>' : ""}
-      <div class="point-summary">
-        <div><span>보유 포인트</span><strong class="accent-value">${points(state.member.points)}</strong></div>
-        <div><span>50P 단위 사용 가능</span><strong>${points(maximum)}</strong></div>
+    <div class="figma-modal point-use-modal">
+      <button class="figma-back" type="button" data-action="back-to-point-decision">뒤로</button>
+      <h2 id="modalTitle">보유 포인트를 사용하시겠습니까?</h2>
+      <section class="member-point-summary">
+        <div class="member-point-heading"><strong>휴대폰 회원</strong><span>포인트 조회·적립</span></div>
+        <div class="point-amount-grid">
+          <div><span>보유 포인트 · 50P 단위 사용</span><strong>${points(state.member.points)}</strong></div>
+          <div><span>결제금액</span><strong>${won(subtotal())}</strong></div>
+        </div>
+      </section>
+      <div class="point-choice-row">
+        <button class="figma-secondary ${state.pointsUsed === 0 ? "is-selected" : ""}" type="button" data-action="select-no-points">사용 안 함</button>
+        <button class="figma-secondary" type="button" data-action="open-direct-points" ${maximum === 0 ? "disabled" : ""}>직접 입력</button>
+        <button class="figma-primary ${state.pointsUsed === maximum && maximum > 0 ? "is-selected" : ""}" type="button" data-action="select-all-points" ${maximum === 0 ? "disabled" : ""}>사용 가능 전액 ✓</button>
       </div>
-      <div class="point-choice-list">
-        <button class="point-choice ${state.pointsUsed === 0 ? "is-selected" : ""}" type="button" data-action="select-no-points"><span>사용 안 함</span><strong>0P</strong></button>
-        <button class="point-choice" type="button" data-action="open-direct-points" ${maximum === 0 ? "disabled" : ""}><span>직접 입력</span><strong>50P 단위</strong></button>
-        <button class="point-choice ${state.pointsUsed === maximum && maximum > 0 ? "is-selected" : ""}" type="button" data-action="select-all-points" ${maximum === 0 ? "disabled" : ""}><span>사용 가능 전액</span><strong>${points(maximum)}</strong></button>
-      </div>
-      <p class="helper-note">포인트 적용 후 결제수단은 언제든 변경할 수 있습니다.</p>
-    </div>
-    <div class="modal-actions" style="--action-columns: 2">
-      <button class="secondary-button" type="button" data-action="retry-phone">회원 다시 확인</button>
-      <button class="primary-button" type="button" data-action="apply-points">적용하고 결제 계속</button>
+      <div class="applied-result"><div><span>포인트 사용 · 잔여 ${points(state.member.points - state.pointsUsed)}</span><strong>−${points(state.pointsUsed)}</strong></div><div><span>최종 결제금액</span><strong>${won(total())}</strong></div></div>
+      <button class="figma-primary figma-full" type="button" data-action="apply-points">적용하고 결제 계속</button>
     </div>`);
 }
 
@@ -422,16 +489,17 @@ function openDirectPoints() {
 
 function renderDirectPoints(errorMessage = "") {
   const display = state.pointInput ? points(Number(state.pointInput)) : "0P";
+  const hasError = Boolean(errorMessage);
   openModal("direct-points", `
-    ${modalHeader("POINT INPUT", "사용할 포인트를 입력해 주세요", `50P 단위로 최대 ${points(safeMaxPoints())}까지 사용할 수 있습니다.`)}
-    <div class="modal-body">
-      <div class="point-display ${state.pointInput ? "" : "is-placeholder"}" id="pointDisplay">${display}</div>
-      ${keypadMarkup("point")}
-      <p class="error-message" id="pointError">${errorMessage}</p>
-    </div>
-    <div class="modal-actions" style="--action-columns: 2">
-      <button class="secondary-button" type="button" data-action="back-to-points">취소</button>
-      <button class="primary-button" type="button" data-action="confirm-direct-points">포인트 적용</button>
+    <div class="figma-modal direct-point-modal ${hasError ? "has-error" : ""}">
+      <button class="figma-back" type="button" data-action="back-to-points">뒤로</button>
+      <h2 id="modalTitle">사용할 포인트를 입력해주세요</h2>
+      <div class="point-and-amount"><div><span>보유 포인트 · 50P 단위 사용</span><strong>${points(state.member.points)}</strong></div><div><span>결제금액</span><strong>${won(subtotal())}</strong></div></div>
+      <div class="point-unit-rule"><strong>50P</strong><span>이 매장은 50P 단위로 사용할 수 있어요 · 최대 ${points(safeMaxPoints())}</span></div>
+      <div class="point-input-display"><span>사용할 포인트</span><strong id="pointDisplay">${display}</strong></div>
+      ${hasError ? `<p class="point-unit-error" id="pointError">${errorMessage}</p>` : ""}
+      ${keypadMarkup("point", { doubleZero: true, backspaceLabel: "⌫" })}
+      <div class="direct-point-actions"><button class="figma-secondary" type="button" data-action="clear-point-input">초기화</button><button class="${hasError ? "figma-disabled" : "figma-primary"}" type="button" data-action="confirm-direct-points">${hasError ? "입력값을 확인해주세요" : `${display} 적용`}</button></div>
     </div>`);
 }
 
@@ -606,13 +674,12 @@ elements.modalContent.addEventListener("click", async (event) => {
   if (!action) return;
 
   if (action === "close" || action === "cancel-payment") closeModal();
-  else if (action === "fill-test-phone") {
-    state.phoneInput = TEST_MEMBER.phone;
-    renderPointLookup();
-  } else if (action === "lookup-member") await lookupMember();
-  else if (action === "retry-phone") openPointLookup();
-  else if (action === "open-signup") openSignup();
+  else if (action === "open-phone-entry") openPhoneEntry();
+  else if (action === "back-to-point-decision") openPointLookup();
+  else if (action === "lookup-member") await lookupMember();
+  else if (action === "retry-phone") openPhoneEntry();
   else if (action === "complete-signup") await completeSignup();
+  else if (action === "continue-after-signup") startPayment();
   else if (action === "guest-payment") {
     state.member = null;
     state.pointsUsed = 0;
@@ -627,6 +694,10 @@ elements.modalContent.addEventListener("click", async (event) => {
     renderTotals();
     openPointUse();
   } else if (action === "open-direct-points") openDirectPoints();
+  else if (action === "clear-point-input") {
+    state.pointInput = "";
+    renderDirectPoints();
+  }
   else if (action === "back-to-points") openPointUse();
   else if (action === "confirm-direct-points") confirmDirectPoints();
   else if (action === "apply-points") startPayment();
