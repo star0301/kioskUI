@@ -1,6 +1,6 @@
 /* ==========================================================================
    토마토 셀프 계산대 · 프로토타입 로직
-   1. CONFIG   운영 옵션 7개 (localStorage 저장)
+   1. CONFIG   운영 옵션 (localStorage 저장)
    2. DATA     상품 · 회원 · 쿠폰 · 봉투
    3. STATE    화면과 장바구니 상태
    4. UTIL     포맷과 DOM 헬퍼
@@ -20,6 +20,8 @@ const STORAGE_KEY = "tomato-kiosk-options";
 /* 실제 매장 배포 시의 기본값 */
 const OPERATION_DEFAULTS = {
   selfCheckout: true,
+  useMemberLogin: true,
+  useDirectSelect: true,
   blockSignup: false,
   usePointEarn: true,
   useCash: false,
@@ -31,6 +33,8 @@ const OPERATION_DEFAULTS = {
 /* 시연용 기본값 : 봉투와 현금결제를 켜 두어 기능을 모두 보여준다. */
 const DEMO_DEFAULTS = {
   selfCheckout: true,
+  useMemberLogin: true,
+  useDirectSelect: true,
   blockSignup: false,
   usePointEarn: true,
   useCash: true,
@@ -40,6 +44,18 @@ const DEMO_DEFAULTS = {
 };
 
 const OPTION_META = [
+  {
+    key: "useMemberLogin",
+    name: "셀프계산대 회원 로그인 사용",
+    desc: "끄면 회원 혜택 확인 화면과 로그인·가입·포인트 화면을 건너뛰고 선택한 결제수단으로 바로 결제합니다. (운영 기본값 ON)",
+    type: "toggle",
+  },
+  {
+    key: "useDirectSelect",
+    name: "상품직접선택 사용",
+    desc: "끄면 우측 상품 직접 선택 영역을 숨기고 상품 담기 영역이 가로 전체를 채웁니다. (운영 기본값 ON)",
+    type: "toggle",
+  },
   {
     key: "selfCheckout",
     name: "셀프계산대 사용",
@@ -610,9 +626,37 @@ const BAGS = [
 
 const MEMBERS = [
   { type: "app", key: "20250708000115", name: "갓준경", point: 5000 },
+  { type: "phone", key: "01012452534", name: "휴대폰 회원", point: 2000 },
   { type: "phone", key: "01011111111", name: "휴대폰 회원", point: 3000 },
   { type: "phone", key: "01000000000", name: "휴대폰 회원", point: 0 },
 ];
+
+const MEMBER_STORAGE_KEY = "tomato-kiosk-phone-members";
+
+function loadRegisteredMembers() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(MEMBER_STORAGE_KEY) || "[]");
+    if (!Array.isArray(saved)) return;
+    saved.forEach((member) => {
+      if (
+        member &&
+        member.type === "phone" &&
+        !MEMBERS.some((item) => item.key === member.key)
+      ) {
+        MEMBERS.push(member);
+      }
+    });
+  } catch (error) {
+    console.warn("저장된 휴대폰 회원 정보를 불러오지 못했습니다", error);
+  }
+}
+
+function persistRegisteredMember(member) {
+  const registered = MEMBERS.filter((item) => item.type === "phone");
+  localStorage.setItem(MEMBER_STORAGE_KEY, JSON.stringify(registered));
+}
+
+loadRegisteredMembers();
 
 /* ==========================================================================
    3. STATE
@@ -734,7 +778,7 @@ function addToCart(product, quantity = 1) {
   } else {
     state.cart.push({ id: product.id, qty: quantity });
   }
-  renderAll();
+  renderTransaction();
   resetIdleTimer();
 }
 
@@ -846,11 +890,39 @@ function earnedPoint(payable) {
    ========================================================================== */
 
 function renderAll() {
+  renderOperationalLayout();
   renderCart();
   renderSummary();
   renderCatalog();
   renderMethods();
   renderMember();
+}
+
+/* 장바구니 조작 때 카탈로그 DOM을 다시 만들지 않아 깜빡임과 스크롤 초기화를 막는다. */
+function renderTransaction() {
+  renderCart();
+  renderSummary();
+  renderMethods();
+  renderMember();
+}
+
+function renderOperationalLayout() {
+  const workspace = $(".workspace");
+  const catalog = $(".panel--catalog");
+  const cartPanel = $(".panel--cart");
+  const bagButton = $("#btn-bag");
+  const directSelectOff = !CONFIG.useDirectSelect;
+  workspace.classList.toggle("is-direct-select-off", directSelectOff);
+  bagButton.classList.toggle("btn--cart-wide", directSelectOff);
+  if (directSelectOff) {
+    cartPanel.appendChild(bagButton);
+  } else {
+    catalog.appendChild(bagButton);
+  }
+  catalog.hidden = directSelectOff;
+  $("#notice-text").textContent = directSelectOff
+    ? "상품 바코드를 스캔해 주세요"
+    : "상품 바코드를 스캔하거나 오른쪽에서 직접 선택하세요";
 }
 
 function renderCart() {
@@ -1033,6 +1105,13 @@ function renderCatalog() {
     });
     dots.appendChild(dot);
   }
+
+  requestAnimationFrame(() => {
+    const activeTab = tabs.querySelector(".tab.is-active");
+    if (activeTab) {
+      activeTab.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    }
+  });
 }
 
 function renderMethods() {
@@ -1063,6 +1142,11 @@ function renderMethods() {
 function renderMember() {
   const info = $("#member-info");
   const pointButton = $("#btn-point-lookup");
+  pointButton.hidden = !CONFIG.useMemberLogin;
+  if (!CONFIG.useMemberLogin) {
+    info.hidden = true;
+    return;
+  }
   if (!state.member) {
     info.hidden = true;
     pointButton.textContent = "포인트 조회";
@@ -2459,6 +2543,10 @@ function bindEvents() {
       renderMethods();
       resetIdleTimer();
 
+      if (!CONFIG.useMemberLogin) {
+        startPayment();
+        return;
+      }
       if (state.member) {
         openPointScreen();
         return;

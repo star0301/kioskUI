@@ -228,7 +228,11 @@ function designAlert(modal, options) {
 /* 02-A 봉투 선택 */
 SCREENS["bag"] = function (modal) {
   setModal(modal, "modal--bag");
-  modalIntro(modal, "원하는 봉투를 담아주세요");
+  modalIntro(
+    modal,
+    "원하는 봉투를 담아주세요",
+    "봉투를 한 번 누르면 장바구니에 담기고 이 창은 바로 닫힙니다.",
+  );
   const grid = el("div", "bags");
   BAGS.forEach(function (bag) {
     const card = el("button", "bag");
@@ -239,6 +243,7 @@ SCREENS["bag"] = function (modal) {
     card.appendChild(el("span", "bag__action", "+ 장바구니 담기"));
     card.addEventListener("click", function () {
       addToCart(bag);
+      closeModal();
       showToast(bag.name + " 담았습니다");
     });
     grid.appendChild(card);
@@ -258,7 +263,6 @@ SCREENS["login-prompt"] = function (modal) {
   modalIntro(
     modal,
     "회원 혜택을 확인할까요?",
-    "토마토 APP에 로그인하면 할인과 쿠폰을 자동으로 확인하고\n포인트도 함께 사용할 수 있습니다.",
   );
   modal.appendChild(
     calloutCard(
@@ -481,12 +485,51 @@ SCREENS["signup-phone"] = function (modal, data) {
         variant: "primary",
         disabled: state.signupPhone.length !== 8,
         onClick: function () {
+          const phone = "010" + state.signupPhone;
+          const existing = MEMBERS.find(function (member) {
+            return member.type === "phone" && member.key === phone;
+          });
+          if (existing) {
+            openModal("signup-duplicate", { member: existing });
+            return;
+          }
           state.signupPin = "";
           openModal("signup-pin");
         },
       },
     ]),
   );
+};
+
+/* 휴대폰 회원가입 중복 검사 */
+SCREENS["signup-duplicate"] = function (modal, data) {
+  designAlert(modal, {
+    icon: iconWarning(),
+    title: "이미 가입된 휴대폰 번호입니다",
+    desc: "새로 가입하지 않고 기존 회원으로 로그인할 수 있습니다.",
+    rows: [
+      { label: "확인한 번호", value: formatPhone(data.member.key) },
+      { label: "보유 포인트", value: point(data.member.point), className: "row__value--brand" },
+    ],
+    actions: actionRow([
+      {
+        label: "번호 다시 입력",
+        variant: "ghost",
+        onClick: function () {
+          openModal("signup-phone", { entryPath: "direct" });
+        },
+      },
+      {
+        label: "기존 회원으로 로그인",
+        variant: "primary",
+        onClick: function () {
+          state.member = Object.assign({}, data.member);
+          renderMember();
+          openPointScreen();
+        },
+      },
+    ]),
+  });
 };
 
 /* 03-D 결제 비밀번호 설정 */
@@ -568,6 +611,7 @@ SCREENS["signup-confirm"] = function (modal) {
             isNew: true,
           };
           MEMBERS.push(newMember);
+          persistRegisteredMember(newMember);
           state.member = Object.assign({}, newMember);
           renderMember();
           openPointScreen();
@@ -712,43 +756,13 @@ SCREENS["point-app"] = function (modal, data) {
 SCREENS["point-phone"] = function (modal, data) {
   const totals = data.totals;
   setModal(modal, "modal--point");
-  pointHeaderExact(
-    modal,
-    totals,
-    "보유 포인트를 사용하시겠습니까?",
-    "휴대폰 회원 · 포인트 조회·적립",
-  );
-  modal.appendChild(memberStrip("phone", "포인트 조회 완료"));
-  if (state.member.isNew) {
-    modal.appendChild(
-      calloutCard(
-        "success",
-        "가입이 완료되었습니다",
-        "축하 포인트 " + point(STORE.signupBonus) + " 포함 · 이번 결제에 바로 사용할 수 있습니다",
-      ),
-    );
-  }
-  modal.appendChild(
-    sectionHeading(
-      "포인트 사용",
-      "보유 " + point(state.member.point) + " · " + STORE.pointUnit + "P 단위",
-    ),
-  );
-  modal.appendChild(pointOptions(totals));
-  modal.appendChild(
-    infoRows([
-      {
-        label: "포인트 사용",
-        value: "−" + point(state.usedPoint),
-        className: "row__value--brand",
-      },
-      {
-        label: "최종 결제금액",
-        value: won(totals.beforePoint - state.usedPoint),
-        className: "row__value--brand",
-      },
-    ]),
-  );
+  modal.appendChild(backButton(function () {
+    openModal("login");
+  }));
+  modalIntro(modal, "보유 포인트를 사용하시겠습니까?");
+  modal.appendChild(phonePointOverview(totals));
+  modal.appendChild(pointOptionsForPhone(totals));
+  modal.appendChild(finalPaymentCard(totals));
   modal.appendChild(
     actionRow([
       {
@@ -766,6 +780,74 @@ SCREENS["point-phone"] = function (modal, data) {
     ], true),
   );
 };
+
+function phonePointOverview(totals) {
+  const overview = el("div", "point-overview");
+  overview.appendChild(
+    el("strong", "point-overview__customer", formatPhone(state.member.key) + " 고객님"),
+  );
+  const metrics = el("div", "point-overview__metrics");
+  const balance = el("div", "point-overview__metric point-overview__metric--balance");
+  balance.appendChild(el("strong", "point-overview__value", point(state.member.point)));
+  balance.appendChild(
+    el("span", "point-overview__unit", STORE.pointUnit + "P 단위로 사용할 수 있습니다."),
+  );
+  const payment = el("div", "point-overview__metric");
+  payment.appendChild(el("span", "point-overview__label", "결제금액"));
+  payment.appendChild(el("strong", "point-overview__value", won(totals.beforePoint)));
+  metrics.appendChild(balance);
+  metrics.appendChild(payment);
+  overview.appendChild(metrics);
+  return overview;
+}
+
+function pointOptionsForPhone(totals) {
+  const maxUsable = Math.min(
+    Math.floor(state.member.point / STORE.pointUnit) * STORE.pointUnit,
+    Math.floor(totals.beforePoint / STORE.pointUnit) * STORE.pointUnit,
+  );
+  const group = el("div", "point-options");
+  [
+    { label: "사용 안 함", value: 0 },
+    { label: "직접 입력", direct: true },
+    { label: "사용 가능 전액<br><strong>" + point(maxUsable) + "</strong>", value: maxUsable },
+  ].forEach(function (item) {
+    const button = el(
+      "button",
+      "point-option" + (!item.direct && state.usedPoint === item.value ? " is-selected" : ""),
+      item.label,
+    );
+    button.type = "button";
+    button.disabled = !item.direct && item.value > 0 && item.value < STORE.pointMin;
+    button.addEventListener("click", function () {
+      if (item.direct) {
+        state.pointInput = state.usedPoint ? String(state.usedPoint) : "";
+        openModal("point-input", { maxUsable: maxUsable });
+        return;
+      }
+      state.usedPoint = item.value;
+      renderSummary();
+      openPointScreen();
+    });
+    group.appendChild(button);
+  });
+  return group;
+}
+
+function finalPaymentCard(totals) {
+  const card = el("div", "final-payment-card");
+  const deduction = el("div", "final-payment-card__row");
+  deduction.appendChild(el("span", "final-payment-card__label", "포인트 사용"));
+  deduction.appendChild(el("strong", "final-payment-card__deduction", "− " + point(state.usedPoint)));
+  card.appendChild(deduction);
+  const final = el("div", "final-payment-card__total");
+  final.appendChild(el("span", "final-payment-card__label", "최종 결제금액"));
+  final.appendChild(
+    el("strong", "final-payment-card__value", won(totals.beforePoint - state.usedPoint)),
+  );
+  card.appendChild(final);
+  return card;
+}
 
 /* 04-APP-D / 04-PHN-D */
 SCREENS["point-disabled"] = function (modal, data) {
@@ -887,7 +969,7 @@ SCREENS["point-input"] = function (modal, data) {
   modal.appendChild(
     infoRows([
       {
-        label: "보유 포인트 · " + STORE.pointUnit + "P 단위 사용",
+        label: "보유 포인트",
         value: point(state.member.point),
         className: "row__value--brand",
       },
@@ -1061,7 +1143,7 @@ SCREENS["pay-device"] = function (modal, data) {
     if (state.modal === "pay-device") {
       openModal("van-waiting", { method: type });
     }
-  }, 1600);
+  }, 3600);
 };
 
 /* 05-C 현금 */
@@ -1107,7 +1189,7 @@ SCREENS["pay-cash"] = function (modal) {
     if (state.modal === "pay-cash") {
       completePayment();
     }
-  }, 2200);
+  }, 4200);
 };
 
 /* P5-P6 승인 진행 */
@@ -1149,7 +1231,7 @@ SCREENS["van-waiting"] = function (modal, data) {
       return;
     }
     completePayment();
-  }, 2000);
+  }, 4000);
 };
 
 /* E-VAN-01 */
@@ -1201,8 +1283,8 @@ SCREENS["cash-return"] = function (modal, data) {
       { label: "필요 금액", value: won(calcTotals().payable) },
       { label: "투입 금액", value: won(data.inserted || 0) },
       {
-        label: "부족 금액",
-        value: won(Math.max(0, calcTotals().payable - (data.inserted || 0))),
+        label: "반환 금액",
+        value: won(data.inserted || 0),
         className: "row__value--brand",
       },
     ],

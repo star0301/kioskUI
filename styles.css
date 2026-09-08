@@ -296,6 +296,20 @@ p {
   min-height: 0;
 }
 
+.workspace.is-direct-select-off {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.workspace.is-direct-select-off .panel--cart {
+  grid-column: 1 / -1;
+}
+
+#btn-bag.btn--cart-wide {
+  flex: 0 0 auto;
+  width: auto;
+  margin: 0 16px 16px;
+}
+
 .panel {
   display: flex;
   flex-direction: column;
@@ -1994,7 +2008,8 @@ p {
 
 .modal-section-head__desc {
   font-size: 14px;
-  color: var(--c-text-secondary);
+  font-weight: 700;
+  color: var(--c-brand);
   text-align: right;
 }
 
@@ -2004,8 +2019,109 @@ p {
   text-align: center;
 }
 
+.point-option strong {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 20px;
+}
+
+.point-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border: 1.5px solid var(--c-border-default);
+  border-radius: 18px;
+  background: var(--c-bg-subtle);
+}
+
+.point-overview__customer {
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.point-overview__metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.point-overview__metric {
+  display: flex;
+  min-width: 0;
+  min-height: 82px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 18px;
+  background: #ffffff;
+}
+
+.point-overview__label {
+  font-size: 13px;
+  color: var(--c-text-secondary);
+}
+
+.point-overview__value {
+  font-size: 24px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.point-overview__metric--balance .point-overview__value,
+.point-overview__unit {
+  color: var(--c-brand);
+}
+
+.point-overview__unit {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.final-payment-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: var(--c-brand-soft);
+}
+
+.final-payment-card__row,
+.final-payment-card__total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.final-payment-card__total {
+  min-height: 42px;
+}
+
+.final-payment-card__label {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.final-payment-card__deduction {
+  font-size: 19px;
+  color: var(--c-brand);
+  white-space: nowrap;
+}
+
+.final-payment-card__value {
+  font-size: 32px;
+  line-height: 1;
+  color: var(--c-brand);
+  white-space: nowrap;
+}
+
 .point-rule {
   min-height: 58px;
+  font-weight: 700;
 }
 
 .point-input {
