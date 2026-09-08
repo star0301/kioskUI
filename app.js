@@ -779,7 +779,10 @@ function calcTotals() {
   });
 
   const afterSale = listTotal - saleDiscount;
-  const coupons = state.member ? activeCoupons() : [];
+  /* APP 로그인에서만 쿠폰·회원할인을 자동 적용한다.
+     휴대폰 회원은 Figma 기획대로 포인트 조회·사용만 제공한다. */
+  const coupons =
+    state.member && state.member.type === "app" ? activeCoupons() : [];
   const couponDiscount = coupons.reduce((sum, c) => sum + c.applied, 0);
   const beforePoint = Math.max(0, afterSale - couponDiscount);
   const usedPoint = Math.min(state.usedPoint, beforePoint);
@@ -1059,13 +1062,16 @@ function renderMethods() {
 
 function renderMember() {
   const info = $("#member-info");
+  const pointButton = $("#btn-point-lookup");
   if (!state.member) {
     info.hidden = true;
+    pointButton.textContent = "포인트 조회";
     return;
   }
   info.hidden = false;
   $("#member-name").textContent = `${state.member.name} 님`;
   $("#member-point").textContent = `보유 ${point(state.member.point)}`;
+  pointButton.textContent = "내역 조회";
 }
 
 /* ==========================================================================
@@ -1086,6 +1092,8 @@ function openModal(name, data = {}) {
   }
 
   overlay.hidden = false;
+  /* APP 로그인·간편결제·연령 승인 모달에서는 물리 스캐너 입력을 계속 받는다. */
+  requestAnimationFrame(focusScanner);
   resetIdleTimer();
 }
 
@@ -2305,7 +2313,11 @@ SCREENS["reset-confirm"] = (modal) => {
 
 function focusScanner() {
   const input = $("#scanner-input");
-  if (state.modal === null) {
+  const scannerModal =
+    state.modal === "login" ||
+    (state.modal === "pay-device" && state.modalData.method === "easy") ||
+    state.modal === "age-approval";
+  if (state.modal === null || scannerModal) {
     input.focus({ preventScroll: true });
   }
 }
@@ -2316,6 +2328,21 @@ function handleScan(code) {
     return;
   }
 
+  /* 연령 확인 대기 중 매니저앱 바코드가 입력되면 대기 상품을 담는다. */
+  if (state.modal === "age-approval") {
+    const pendingProduct = state.modalData.product;
+    closeModal();
+    addToCart(pendingProduct);
+    showToast("성인 확인이 완료되어 상품을 담았습니다");
+    return;
+  }
+
+  /* 간편결제 바코드는 상품이나 회원 바코드로 해석하지 않는다. */
+  if (state.modal === "pay-device" && state.modalData.method === "easy") {
+    openModal("van-waiting", { method: "easy" });
+    return;
+  }
+
   /* APP 회원 바코드 : 14자리 숫자 */
   const member = MEMBERS.find((m) => m.type === "app" && m.key === trimmed);
   if (member) {
@@ -2323,6 +2350,15 @@ function handleScan(code) {
     renderMember();
     showToast(`${member.name} 님, 환영합니다`);
     openPointScreen();
+    return;
+  }
+
+  /* 로그인 모달에서는 등록되지 않은 숫자를 상품으로 처리하지 않는다. */
+  if (state.modal === "login") {
+    openModal("not-member", {
+      phone: trimmed.length === 11 ? trimmed : "",
+      lookupValue: trimmed,
+    });
     return;
   }
 
@@ -2341,8 +2377,10 @@ function pickProduct(product) {
     openModal("item-soldout", { product });
     return;
   }
-  if (product.ageLimit && CONFIG.blockAgeRestricted) {
-    openModal("item-age", { product });
+  if (product.ageLimit) {
+    openModal(CONFIG.blockAgeRestricted ? "item-age" : "age-approval", {
+      product,
+    });
     return;
   }
   addToCart(product);
@@ -2391,7 +2429,9 @@ function resetIdleTimer() {
 function bindEvents() {
   on("#btn-options", "click", () => openModal("options"));
   on("#btn-reset", "click", () => openModal("reset-confirm"));
-  on("#btn-point-lookup", "click", () => openModal("login"));
+  on("#btn-point-lookup", "click", () =>
+    openModal(state.member ? "point-history" : "login"),
+  );
   on("#btn-bag", "click", () => openModal("bag"));
   on("#btn-clear-cart", "click", () => {
     if (state.cart.length === 0) {
