@@ -106,6 +106,19 @@ const CONFIG = loadConfig();
    2. DATA
    ========================================================================== */
 
+/*
+  ERP 에 1:1 로 등록된 상품 이미지 경로.
+  실제 연동 시 product.image 에 ERP 이미지 URL 을 넣으면 그대로 표시된다.
+  값이 없으면 빈 이미지 자리가 유지된다.
+*/
+const IMAGE_BASE = "assets/img/";
+const IMAGE_EXTS = ["jpg", "png", "webp"];
+
+/* 상품 id 에 맞춘 파일을 확장자 순서대로 찾아본다. */
+function imageSources(id) {
+  return IMAGE_EXTS.map((ext) => `${IMAGE_BASE}${id}.${ext}`);
+}
+
 const STORE = {
   name: "토마토마트 본점",
   kioskNo: 3,
@@ -198,10 +211,34 @@ const PRODUCTS = [
     price: 5480,
     barcode: "8801043001110",
   },
-  { id: "r11", cat: "라면", name: "열라면 매운맛 (5개입)", price: 3580, barcode: "8801043001111" },
-  { id: "r12", cat: "라면", name: "김치라면 (4개입)", price: 3380, barcode: "8801043001112" },
-  { id: "r13", cat: "라면", name: "사리곰탕면 (4개입)", price: 3280, barcode: "8801043001113" },
-  { id: "r14", cat: "라면", name: "육개장 사발면 (6개입)", price: 5880, barcode: "8801043001114" },
+  {
+    id: "r11",
+    cat: "라면",
+    name: "열라면 매운맛 (5개입)",
+    price: 3580,
+    barcode: "8801043001111",
+  },
+  {
+    id: "r12",
+    cat: "라면",
+    name: "김치라면 (4개입)",
+    price: 3380,
+    barcode: "8801043001112",
+  },
+  {
+    id: "r13",
+    cat: "라면",
+    name: "사리곰탕면 (4개입)",
+    price: 3280,
+    barcode: "8801043001113",
+  },
+  {
+    id: "r14",
+    cat: "라면",
+    name: "육개장 사발면 (6개입)",
+    price: 5880,
+    barcode: "8801043001114",
+  },
   {
     id: "r15",
     cat: "라면",
@@ -231,16 +268,64 @@ const PRODUCTS = [
     price: 4680,
     barcode: "8801043001118",
   },
-  { id: "r19", cat: "라면", name: "일품 해물라면 (4개입)", price: 4880, barcode: "8801043001119" },
-  { id: "r20", cat: "라면", name: "참깨라면 (4개입)", price: 4080, barcode: "8801043001120" },
-  { id: "r21", cat: "라면", name: "짜왕 매콤한 맛 (4개입)", price: 4780, barcode: "8801043001121" },
-  { id: "r22", cat: "라면", name: "진짬뽕 (4개입)", price: 4980, barcode: "8801043001122" },
-  { id: "r23", cat: "라면", name: "신라면 건면 (5개입)", price: 4380, barcode: "8801043001123" },
-  { id: "r24", cat: "라면", name: "순한 맛 순라면 (5개입)", price: 3080, barcode: "8801043001124" },
-  { id: "r25", cat: "라면", name: "컵누들 우동맛 (6개입)", price: 5580, barcode: "8801043001125" },
+  {
+    id: "r19",
+    cat: "라면",
+    name: "일품 해물라면 (4개입)",
+    price: 4880,
+    barcode: "8801043001119",
+  },
+  {
+    id: "r20",
+    cat: "라면",
+    name: "참깨라면 (4개입)",
+    price: 4080,
+    barcode: "8801043001120",
+  },
+  {
+    id: "r21",
+    cat: "라면",
+    name: "짜왕 매콤한 맛 (4개입)",
+    price: 4780,
+    barcode: "8801043001121",
+  },
+  {
+    id: "r22",
+    cat: "라면",
+    name: "진짬뽕 (4개입)",
+    price: 4980,
+    barcode: "8801043001122",
+  },
+  {
+    id: "r23",
+    cat: "라면",
+    name: "신라면 건면 (5개입)",
+    price: 4380,
+    barcode: "8801043001123",
+  },
+  {
+    id: "r24",
+    cat: "라면",
+    name: "순한 맛 순라면 (5개입)",
+    price: 3080,
+    barcode: "8801043001124",
+  },
+  {
+    id: "r25",
+    cat: "라면",
+    name: "컵누들 우동맛 (6개입)",
+    price: 5580,
+    barcode: "8801043001125",
+  },
 
   // ── 음료 7 ───────────────────────────────────────────────────────────────
-  { id: "d01", cat: "음료", name: "초정탄산수 플레인 330ml", price: 330, barcode: "8801223100209" },
+  {
+    id: "d01",
+    cat: "음료",
+    name: "초정탄산수 플레인 330ml",
+    price: 330,
+    barcode: "8801223100209",
+  },
   {
     id: "d02",
     cat: "음료",
@@ -248,7 +333,13 @@ const PRODUCTS = [
     price: 2200,
     barcode: "8801094001201",
   },
-  { id: "d03", cat: "음료", name: "칠성사이다 500ml", price: 2100, barcode: "8801094001202" },
+  {
+    id: "d03",
+    cat: "음료",
+    name: "칠성사이다 500ml",
+    price: 2100,
+    barcode: "8801094001202",
+  },
   {
     id: "d04",
     cat: "음료",
@@ -264,11 +355,29 @@ const PRODUCTS = [
     price: 1900,
     barcode: "8801094001204",
   },
-  { id: "d06", cat: "음료", name: "하루야채 토마토 200ml", price: 1700, barcode: "8801094001205" },
-  { id: "d07", cat: "음료", name: "데자와 밀크티 500ml", price: 2300, barcode: "8801094001206" },
+  {
+    id: "d06",
+    cat: "음료",
+    name: "하루야채 토마토 200ml",
+    price: 1700,
+    barcode: "8801094001205",
+  },
+  {
+    id: "d07",
+    cat: "음료",
+    name: "데자와 밀크티 500ml",
+    price: 2300,
+    barcode: "8801094001206",
+  },
 
   // ── 냉장 6 ───────────────────────────────────────────────────────────────
-  { id: "c01", cat: "냉장", name: "서울우유 저지방 1L", price: 3180, barcode: "8801115001301" },
+  {
+    id: "c01",
+    cat: "냉장",
+    name: "서울우유 저지방 1L",
+    price: 3180,
+    barcode: "8801115001301",
+  },
   {
     id: "c02",
     cat: "냉장",
@@ -308,8 +417,20 @@ const PRODUCTS = [
   },
 
   // ── 과자 8 ───────────────────────────────────────────────────────────────
-  { id: "s01", cat: "과자", name: "포카칩 오리지널 66g", price: 1700, barcode: "8801062001401" },
-  { id: "s02", cat: "과자", name: "새우깡 90g", price: 1500, barcode: "8801062001402" },
+  {
+    id: "s01",
+    cat: "과자",
+    name: "포카칩 오리지널 66g",
+    price: 1700,
+    barcode: "8801062001401",
+  },
+  {
+    id: "s02",
+    cat: "과자",
+    name: "새우깡 90g",
+    price: 1500,
+    barcode: "8801062001402",
+  },
   {
     id: "s03",
     cat: "과자",
@@ -318,8 +439,20 @@ const PRODUCTS = [
     sale: 1900,
     barcode: "8801062001403",
   },
-  { id: "s04", cat: "과자", name: "홈런볼 초코 46g", price: 1800, barcode: "8801062001404" },
-  { id: "s05", cat: "과자", name: "오예스 초코 (12개입)", price: 6480, barcode: "8801062001405" },
+  {
+    id: "s04",
+    cat: "과자",
+    name: "홈런볼 초코 46g",
+    price: 1800,
+    barcode: "8801062001404",
+  },
+  {
+    id: "s05",
+    cat: "과자",
+    name: "오예스 초코 (12개입)",
+    price: 6480,
+    barcode: "8801062001405",
+  },
   {
     id: "s06",
     cat: "과자",
@@ -334,7 +467,13 @@ const PRODUCTS = [
     price: 5980,
     barcode: "8801062001407",
   },
-  { id: "s08", cat: "과자", name: "프링글스 오리지널 110g", price: 3200, barcode: "8801062001408" },
+  {
+    id: "s08",
+    cat: "과자",
+    name: "프링글스 오리지널 110g",
+    price: 3200,
+    barcode: "8801062001408",
+  },
 
   // ── 생활용품 6 ───────────────────────────────────────────────────────────
   {
@@ -674,7 +813,11 @@ function activeCoupons() {
   return result;
 }
 
+/* 적립은 회원에게만 발생한다. 비회원 결제는 적립 행 자체를 두지 않는다. */
 function earnedPoint(payable) {
+  if (!state.member) {
+    return null;
+  }
   if (!CONFIG.usePointEarn) {
     return 0;
   }
@@ -720,15 +863,17 @@ function renderCart() {
         el(
           "span",
           "badge badge--sale",
-          `행사할인 −${(product.price - price).toLocaleString("ko-KR")}원`
-        )
+          `행사할인 −${(product.price - price).toLocaleString("ko-KR")}원`,
+        ),
       );
       nameCell.appendChild(badges);
     }
 
     const unitCell = el("div", "cart__unit");
     if (hasSale) {
-      unitCell.appendChild(el("del", null, product.price.toLocaleString("ko-KR")));
+      unitCell.appendChild(
+        el("del", null, product.price.toLocaleString("ko-KR")),
+      );
     }
     unitCell.appendChild(el("span", null, price.toLocaleString("ko-KR")));
 
@@ -763,7 +908,18 @@ function renderSummary() {
     `−${(totals.saleDiscount + totals.couponDiscount).toLocaleString("ko-KR")}원`;
   $("#sum-total").textContent = won(totals.payable);
   $("#pay-amount").textContent = won(totals.payable);
-  $("#btn-pay").disabled = state.cart.length === 0 || state.method === null;
+}
+
+/* 격자를 잠깐 흐리게 했다가 다시 그려 전환이 눈에 보이도록 한다. */
+function switchCatalog(mutate) {
+  const grid = $("#product-grid");
+  grid.classList.add("is-switching");
+  setTimeout(() => {
+    mutate();
+    renderCatalog();
+    grid.classList.remove("is-switching");
+  }, 140);
+  resetIdleTimer();
 }
 
 function renderCatalog() {
@@ -771,12 +927,16 @@ function renderCatalog() {
   tabs.innerHTML = "";
 
   CATEGORIES.forEach((cat) => {
-    const tab = el("button", `tab${cat === state.category ? " is-active" : ""}`, cat);
+    const tab = el(
+      "button",
+      `tab${cat === state.category ? " is-active" : ""}`,
+      cat,
+    );
     tab.addEventListener("click", () => {
-      state.category = cat;
-      state.page = 0;
-      renderCatalog();
-      resetIdleTimer();
+      switchCatalog(() => {
+        state.category = cat;
+        state.page = 0;
+      });
     });
     tabs.appendChild(tab);
   });
@@ -789,54 +949,99 @@ function renderCatalog() {
   const grid = $("#product-grid");
   grid.innerHTML = "";
 
-  items.slice(state.page * pageSize, state.page * pageSize + pageSize).forEach((product) => {
-    const card = el("button", `product${product.soldOut ? " is-soldout" : ""}`);
-    card.appendChild(el("span", "product__name", product.name));
-    card.appendChild(el("span", "product__price", won(unitPrice(product))));
+  items
+    .slice(state.page * pageSize, state.page * pageSize + pageSize)
+    .forEach((product) => {
+      const card = el(
+        "button",
+        `product${product.soldOut ? " is-soldout" : ""}`,
+      );
 
-    const badges = el("div", "product__badges");
-    if (product.sale !== undefined) {
-      badges.appendChild(el("span", "badge badge--sale", "행사"));
-    }
-    if (RAMEN_EVENT_IDS.includes(product.id)) {
-      badges.appendChild(el("span", "badge badge--coupon", "기획전"));
-    }
-    if (product.ageLimit) {
-      badges.appendChild(el("span", "badge badge--age", "연령제한"));
-    }
-    if (product.soldOut) {
-      badges.appendChild(el("span", "badge badge--soldout", "품절"));
-    }
-    card.appendChild(badges);
+      /* 1) 상품명 : 꼭대기 고정, 두 줄까지 보여주고 넘치면 말줄임 */
+      card.appendChild(el("span", "product__name", product.name));
 
-    card.addEventListener("click", () => pickProduct(product));
-    grid.appendChild(card);
-  });
+      /* 2) 상품 이미지 : ERP 에 1:1 로 등록된 파일. 없으면 빈 자리를 유지한다. */
+      const imageBox = el("div", "product__image");
+      const img = el("img");
+      const sources = imageSources(product.id);
+      let attempt = 0;
+      img.alt = "";
+      img.loading = "lazy";
+      img.src = sources[attempt];
+      img.addEventListener("error", () => {
+        attempt += 1;
+        if (attempt < sources.length) {
+          img.src = sources[attempt];
+          return;
+        }
+        img.remove();
+        imageBox.appendChild(el("span", "product__image-empty", "이미지"));
+      });
+      imageBox.appendChild(img);
+      card.appendChild(imageBox);
+
+      /* 3) 행사면 원가에 삭선을 긋고, 그 아래 할인가와 작은 배지를 둔다. */
+      const stack = el("div", "product__price-stack");
+      if (product.sale !== undefined) {
+        stack.appendChild(el("del", "product__list-price", won(product.price)));
+      }
+
+      const priceRow = el("div", "product__price-row");
+      priceRow.appendChild(
+        el("span", "product__price", won(unitPrice(product))),
+      );
+      if (product.sale !== undefined) {
+        priceRow.appendChild(el("span", "badge badge--sale", "행사"));
+      } else if (product.soldOut) {
+        priceRow.appendChild(el("span", "badge badge--soldout", "품절"));
+      }
+      stack.appendChild(priceRow);
+      card.appendChild(stack);
+
+      card.addEventListener("click", () => pickProduct(product));
+      grid.appendChild(card);
+    });
 
   const dots = $("#page-dots");
   dots.innerHTML = "";
   for (let i = 0; i < pageCount; i += 1) {
-    const dot = el("button", `pager__dot${i === state.page ? " is-active" : ""}`, String(i + 1));
+    const dot = el(
+      "button",
+      `pager__dot${i === state.page ? " is-active" : ""}`,
+      String(i + 1),
+    );
     dot.addEventListener("click", () => {
-      state.page = i;
-      renderCatalog();
-      resetIdleTimer();
+      switchCatalog(() => {
+        state.page = i;
+      });
     });
     dots.appendChild(dot);
   }
 }
 
 function renderMethods() {
-  $$(".method--pick").forEach((node) => {
+  const empty = state.cart.length === 0;
+
+  $$(".method").forEach((node) => {
     const method = node.dataset.method;
-    const disabled = method === "cash" && !CONFIG.useCash;
+    const disabled = (method === "cash" && !CONFIG.useCash) || empty;
 
     node.classList.toggle("is-disabled", disabled);
     node.classList.toggle("is-selected", state.method === method && !disabled);
 
     const stateLabel = node.querySelector(".method__state");
-    stateLabel.textContent = disabled ? "사용 불가" : "현재 사용 가능";
+    if (method === "cash" && !CONFIG.useCash) {
+      stateLabel.textContent = "사용 불가";
+    } else if (empty) {
+      stateLabel.textContent = "상품을 먼저 담아주세요";
+    } else {
+      stateLabel.textContent = "현재 사용 가능";
+    }
   });
+
+  $("#checkout-guide").textContent = empty
+    ? "상품을 담으면 결제할 수 있습니다"
+    : "결제하실 방법을 선택해 주세요";
 
   const bagBtn = $("#btn-bag");
   bagBtn.classList.toggle("is-disabled", !CONFIG.useBag);
@@ -891,7 +1096,10 @@ function backButton(onClick) {
 }
 
 function actionRow(buttons, stack = false) {
-  const row = el("div", `modal__actions${stack ? " modal__actions--stack" : ""}`);
+  const row = el(
+    "div",
+    `modal__actions${stack ? " modal__actions--stack" : ""}`,
+  );
   buttons.forEach(({ label, variant, onClick, disabled }) => {
     const btn = el("button", `btn btn--${variant}`, label);
     btn.disabled = Boolean(disabled);
@@ -919,7 +1127,9 @@ function alertScreen(modal, { icon, title, desc, rows = [], actions }) {
   }
   if (rows.length > 0) {
     const box = el("div", "modal__rows");
-    rows.forEach((r) => box.appendChild(rowItem(r.label, r.value, r.className)));
+    rows.forEach((r) =>
+      box.appendChild(rowItem(r.label, r.value, r.className)),
+    );
     modal.appendChild(box);
   }
   modal.appendChild(actions);
@@ -946,7 +1156,9 @@ SCREENS["bag"] = (modal) => {
   modal.appendChild(grid);
 
   modal.appendChild(
-    actionRow([{ label: "봉투 없이 돌아가기", variant: "ghost", onClick: closeModal }])
+    actionRow([
+      { label: "봉투 없이 돌아가기", variant: "ghost", onClick: closeModal },
+    ]),
   );
 };
 
@@ -957,25 +1169,39 @@ SCREENS["login-prompt"] = (modal) => {
     el(
       "p",
       "modal__desc",
-      "토마토 APP 회원은 행사·쿠폰이 자동으로 적용되고\n포인트도 바로 사용할 수 있습니다"
-    )
+      "토마토 APP 회원은 행사·쿠폰이 자동으로 적용되고\n포인트도 바로 사용할 수 있습니다",
+    ),
   );
 
   const callout = el("div", "callout callout--brand");
-  callout.appendChild(el("strong", "callout__title", "지금 로그인하면 할인 자동 적용"));
   callout.appendChild(
-    el("p", "callout__text", "APP 바코드 또는 휴대폰 번호로 1초 만에 확인됩니다")
+    el("strong", "callout__title", "지금 로그인하면 할인 자동 적용"),
+  );
+  callout.appendChild(
+    el(
+      "p",
+      "callout__text",
+      "APP 바코드 또는 휴대폰 번호로 1초 만에 확인됩니다",
+    ),
   );
   modal.appendChild(callout);
 
   modal.appendChild(
     actionRow(
       [
-        { label: "로그인하고 혜택 받기", variant: "primary", onClick: () => openModal("login") },
-        { label: "회원 혜택 없이 결제", variant: "ghost", onClick: () => startPayment() },
+        {
+          label: "로그인하고 혜택 받기",
+          variant: "primary",
+          onClick: () => openModal("login"),
+        },
+        {
+          label: "회원 혜택 없이 결제",
+          variant: "ghost",
+          onClick: () => startPayment(),
+        },
       ],
-      true
-    )
+      true,
+    ),
   );
 };
 
@@ -988,10 +1214,16 @@ SCREENS["login"] = (modal) => {
   const grid = el("div", "login");
 
   const app = el("div", "login__col login__col--app");
-  app.appendChild(el("span", "badge badge--sale", "추천 · 모든 할인 자동 적용"));
+  app.appendChild(
+    el("span", "badge badge--sale", "추천 · 모든 할인 자동 적용"),
+  );
   app.appendChild(el("h3", "login__heading", "APP 회원 바코드 스캔"));
   app.appendChild(
-    el("p", "login__desc", "행사·쿠폰까지 사용 가능한 쿠폰을\n로그인 즉시 전부 자동으로 적용합니다")
+    el(
+      "p",
+      "login__desc",
+      "행사·쿠폰까지 사용 가능한 쿠폰을\n로그인 즉시 전부 자동으로 적용합니다",
+    ),
   );
   const scanBox = el("div", "login__scan");
   scanBox.innerHTML = `
@@ -1019,19 +1251,25 @@ SCREENS["login"] = (modal) => {
   const phone = el("div", "login__col");
   phone.appendChild(el("h3", "login__heading", "휴대폰 번호로 확인"));
   phone.appendChild(
-    el("p", "login__desc", "APP 가입 · 휴대폰 번호 회원 모두\n포인트만 조회·사용할 수 있습니다")
+    el(
+      "p",
+      "login__desc",
+      "APP 가입 · 휴대폰 번호 회원 모두\n포인트만 조회·사용할 수 있습니다",
+    ),
   );
   phone.appendChild(phoneDisplay(state.phoneInput));
   phone.appendChild(
     keypad((key) => {
       handlePhoneKey(key);
       openModal("login");
-    })
+    }),
   );
 
   const confirm = el("button", "btn btn--neutral", "확인");
   confirm.disabled = state.phoneInput.length !== 8;
-  confirm.addEventListener("click", () => lookupPhone(`010${state.phoneInput}`));
+  confirm.addEventListener("click", () =>
+    lookupPhone(`010${state.phoneInput}`),
+  );
   phone.appendChild(confirm);
   grid.appendChild(phone);
 
@@ -1043,17 +1281,23 @@ SCREENS["login"] = (modal) => {
       el(
         "p",
         "modal__note text-center",
-        "토마토 APP회원이 아니라면? APP을 설치하거나 휴대폰 번호로 바로 가입할 수 있어요"
-      )
+        "토마토 APP회원이 아니라면? APP을 설치하거나 휴대폰 번호로 바로 가입할 수 있어요",
+      ),
     );
 
     const signupRow = el("div", "modal__actions");
     ["Android · Google Play", "iPhone · App Store"].forEach((label) => {
       const card = el("button", "btn btn--ghost", label);
-      card.addEventListener("click", () => showToast("시연에서는 앱 설치를 생략합니다"));
+      card.addEventListener("click", () =>
+        showToast("시연에서는 앱 설치를 생략합니다"),
+      );
       signupRow.appendChild(card);
     });
-    const direct = el("button", "btn btn--outline", "휴대폰 번호로 바로 가입하기");
+    const direct = el(
+      "button",
+      "btn btn--outline",
+      "휴대폰 번호로 바로 가입하기",
+    );
     direct.addEventListener("click", () => {
       state.signupPhone = "";
       openModal("signup-phone", { entryPath: "direct" });
@@ -1074,23 +1318,36 @@ function phoneDisplay(digits) {
     el(
       "span",
       `phone-display__slot${digits.length === 0 ? " phone-display__slot--empty" : ""}`,
-      front
-    )
+      front,
+    ),
   );
   box.appendChild(el("span", "phone-display__prefix", "-"));
   box.appendChild(
     el(
       "span",
       `phone-display__slot${digits.length <= 4 ? " phone-display__slot--empty" : ""}`,
-      back
-    )
+      back,
+    ),
   );
   return box;
 }
 
 function keypad(onKey) {
   const pad = el("div", "keypad");
-  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "전체삭제", "0", "←"];
+  const keys = [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "전체삭제",
+    "0",
+    "←",
+  ];
   keys.forEach((key) => {
     const isFn = key === "전체삭제" || key === "←";
     const btn = el("button", `key${isFn ? " key--fn" : ""}`, key);
@@ -1111,7 +1368,9 @@ function handlePhoneKey(key) {
 }
 
 function lookupPhone(fullNumber) {
-  const member = MEMBERS.find((m) => m.type === "phone" && m.key === fullNumber);
+  const member = MEMBERS.find(
+    (m) => m.type === "phone" && m.key === fullNumber,
+  );
   if (member) {
     state.member = { ...member };
     state.phoneInput = "";
@@ -1127,16 +1386,28 @@ SCREENS["not-member"] = (modal, data) => {
   modal.appendChild(backButton(() => openModal("login")));
   modal.appendChild(el("h2", "modal__title", "가입되지 않은 번호입니다"));
   modal.appendChild(
-    el("p", "modal__desc", `${formatPhone(data.phone)} 로 가입된 회원 정보가 없습니다`)
+    el(
+      "p",
+      "modal__desc",
+      `${formatPhone(data.phone)} 로 가입된 회원 정보가 없습니다`,
+    ),
   );
 
   if (!CONFIG.blockSignup) {
     const callout = el("div", "callout callout--success");
     callout.appendChild(
-      el("strong", "callout__title", `지금 가입하면 축하 포인트 ${point(STORE.signupBonus)}`)
+      el(
+        "strong",
+        "callout__title",
+        `지금 가입하면 축하 포인트 ${point(STORE.signupBonus)}`,
+      ),
     );
     callout.appendChild(
-      el("p", "callout__text", "이번 결제에 바로 사용할 수 있습니다 · 매장 ERP 설정값")
+      el(
+        "p",
+        "callout__text",
+        "이번 결제에 바로 사용할 수 있습니다 · 매장 ERP 설정값",
+      ),
     );
     modal.appendChild(callout);
   }
@@ -1152,7 +1423,11 @@ SCREENS["not-member"] = (modal, data) => {
       },
     });
   }
-  buttons.push({ label: "회원 혜택 없이 결제", variant: "ghost", onClick: () => startPayment() });
+  buttons.push({
+    label: "회원 혜택 없이 결제",
+    variant: "ghost",
+    onClick: () => startPayment(),
+  });
   modal.appendChild(actionRow(buttons, buttons.length > 1));
 };
 
@@ -1170,8 +1445,8 @@ SCREENS["signup-phone"] = (modal, data) => {
       "modal__desc",
       data.entryPath === "from-lookup"
         ? "03-A 에서 입력한 번호가 자동으로 채워집니다\n다른 번호로 가입하려면 지우고 다시 입력해 주세요"
-        : "가입할 휴대폰 번호를 입력해 주세요"
-    )
+        : "가입할 휴대폰 번호를 입력해 주세요",
+    ),
   );
   modal.appendChild(phoneDisplay(state.signupPhone));
   modal.appendChild(
@@ -1184,7 +1459,7 @@ SCREENS["signup-phone"] = (modal, data) => {
         state.signupPhone += key;
       }
       openModal("signup-phone", data);
-    })
+    }),
   );
 
   modal.appendChild(
@@ -1198,18 +1473,22 @@ SCREENS["signup-phone"] = (modal, data) => {
           openModal("signup-pin");
         },
       },
-    ])
+    ]),
   );
 };
 
 /* ── 03-D 결제 비밀번호 설정 ──────────────────────────────────────────────── */
 SCREENS["signup-pin"] = (modal) => {
-  modal.appendChild(backButton(() => openModal("signup-phone", { entryPath: "from-lookup" })));
+  modal.appendChild(
+    backButton(() => openModal("signup-phone", { entryPath: "from-lookup" })),
+  );
   modal.appendChild(el("h2", "modal__title", "결제 비밀번호를 설정해주세요"));
   modal.appendChild(el("p", "modal__desc", "숫자 4자리를 입력해 주세요"));
 
   const box = el("div", "phone-display");
-  box.appendChild(el("span", "phone-display__slot", state.signupPin.padEnd(4, "_")));
+  box.appendChild(
+    el("span", "phone-display__slot", state.signupPin.padEnd(4, "_")),
+  );
   modal.appendChild(box);
 
   modal.appendChild(
@@ -1222,7 +1501,7 @@ SCREENS["signup-pin"] = (modal) => {
         state.signupPin += key;
       }
       openModal("signup-pin");
-    })
+    }),
   );
 
   modal.appendChild(
@@ -1233,7 +1512,7 @@ SCREENS["signup-pin"] = (modal) => {
         disabled: state.signupPin.length !== 4,
         onClick: () => openModal("signup-confirm"),
       },
-    ])
+    ]),
   );
 };
 
@@ -1249,9 +1528,15 @@ SCREENS["signup-confirm"] = (modal) => {
 
   const callout = el("div", "callout callout--success");
   callout.appendChild(
-    el("strong", "callout__title", `가입 축하 포인트 ${point(STORE.signupBonus)} 지급`)
+    el(
+      "strong",
+      "callout__title",
+      `가입 축하 포인트 ${point(STORE.signupBonus)} 지급`,
+    ),
   );
-  callout.appendChild(el("p", "callout__text", "이번 결제에 바로 사용할 수 있습니다"));
+  callout.appendChild(
+    el("p", "callout__text", "이번 결제에 바로 사용할 수 있습니다"),
+  );
   modal.appendChild(callout);
 
   modal.appendChild(
@@ -1278,7 +1563,7 @@ SCREENS["signup-confirm"] = (modal) => {
           openPointScreen();
         },
       },
-    ])
+    ]),
   );
 };
 
@@ -1291,7 +1576,9 @@ function openPointScreen() {
     openModal("point-disabled", { totals });
     return;
   }
-  openModal(state.member.type === "app" ? "point-app" : "point-phone", { totals });
+  openModal(state.member.type === "app" ? "point-app" : "point-phone", {
+    totals,
+  });
 }
 
 function pointHeader(modal, totals, title) {
@@ -1299,7 +1586,9 @@ function pointHeader(modal, totals, title) {
   modal.appendChild(el("h2", "modal__title", title));
 
   const box = el("div", "modal__rows");
-  box.appendChild(rowItem("보유 포인트", point(state.member.point), "row__value--brand"));
+  box.appendChild(
+    rowItem("보유 포인트", point(state.member.point), "row__value--brand"),
+  );
   box.appendChild(rowItem("결제 예정 금액", won(totals.beforePoint)));
   modal.appendChild(box);
 }
@@ -1312,18 +1601,26 @@ SCREENS["point-app"] = (modal, { totals }) => {
     el(
       "strong",
       "callout__title",
-      `총 ${(totals.saleDiscount + totals.couponDiscount).toLocaleString("ko-KR")}원 할인`
-    )
+      `총 ${(totals.saleDiscount + totals.couponDiscount).toLocaleString("ko-KR")}원 할인`,
+    ),
   );
   callout.appendChild(
-    el("p", "callout__text", "행사 할인과 사용 가능한 쿠폰이 전부 자동 적용되었습니다")
+    el(
+      "p",
+      "callout__text",
+      "행사 할인과 사용 가능한 쿠폰이 전부 자동 적용되었습니다",
+    ),
   );
   modal.appendChild(callout);
 
   const list = el("div", "modal__rows discount-list");
   totals.coupons.forEach((coupon) => {
     list.appendChild(
-      rowItem(coupon.name, `−${coupon.applied.toLocaleString("ko-KR")}원`, "row__value--brand")
+      rowItem(
+        coupon.name,
+        `−${coupon.applied.toLocaleString("ko-KR")}원`,
+        "row__value--brand",
+      ),
     );
   });
   if (totals.coupons.length === 0) {
@@ -1335,11 +1632,19 @@ SCREENS["point-app"] = (modal, { totals }) => {
   modal.appendChild(
     actionRow(
       [
-        { label: "적용하고 결제 계속", variant: "primary", onClick: () => startPayment() },
-        { label: "계산 취소", variant: "neutral", onClick: () => openModal("cancel-checkout") },
+        {
+          label: "적용하고 결제 계속",
+          variant: "primary",
+          onClick: () => startPayment(),
+        },
+        {
+          label: "계산 취소",
+          variant: "neutral",
+          onClick: () => openModal("cancel-checkout"),
+        },
       ],
-      true
-    )
+      true,
+    ),
   );
 };
 
@@ -1348,13 +1653,15 @@ SCREENS["point-phone"] = (modal, { totals }) => {
 
   if (state.member.isNew) {
     const callout = el("div", "callout callout--success");
-    callout.appendChild(el("strong", "callout__title", "가입이 완료되었습니다"));
+    callout.appendChild(
+      el("strong", "callout__title", "가입이 완료되었습니다"),
+    );
     callout.appendChild(
       el(
         "p",
         "callout__text",
-        `축하 포인트 ${point(STORE.signupBonus)} 포함 · 이번 결제에 바로 사용할 수 있습니다`
-      )
+        `축하 포인트 ${point(STORE.signupBonus)} 포함 · 이번 결제에 바로 사용할 수 있습니다`,
+      ),
     );
     modal.appendChild(callout);
   }
@@ -1363,11 +1670,19 @@ SCREENS["point-phone"] = (modal, { totals }) => {
   modal.appendChild(
     actionRow(
       [
-        { label: "적용하고 결제 계속", variant: "primary", onClick: () => startPayment() },
-        { label: "계산 취소", variant: "neutral", onClick: () => openModal("cancel-checkout") },
+        {
+          label: "적용하고 결제 계속",
+          variant: "primary",
+          onClick: () => startPayment(),
+        },
+        {
+          label: "계산 취소",
+          variant: "neutral",
+          onClick: () => openModal("cancel-checkout"),
+        },
       ],
-      true
-    )
+      true,
+    ),
   );
 };
 
@@ -1380,8 +1695,8 @@ SCREENS["point-disabled"] = (modal, { totals }) => {
     el(
       "p",
       "callout__text",
-      `보유 ${point(state.member.point)} · 이 매장은 ${point(STORE.pointMin)}부터 사용할 수 있어요`
-    )
+      `보유 ${point(state.member.point)} · 이 매장은 ${point(STORE.pointMin)}부터 사용할 수 있어요`,
+    ),
   );
   modal.appendChild(callout);
 
@@ -1396,11 +1711,19 @@ SCREENS["point-disabled"] = (modal, { totals }) => {
   modal.appendChild(
     actionRow(
       [
-        { label: "결제 계속", variant: "primary", onClick: () => startPayment() },
-        { label: "계산 취소", variant: "neutral", onClick: () => openModal("cancel-checkout") },
+        {
+          label: "결제 계속",
+          variant: "primary",
+          onClick: () => startPayment(),
+        },
+        {
+          label: "계산 취소",
+          variant: "neutral",
+          onClick: () => openModal("cancel-checkout"),
+        },
       ],
-      true
-    )
+      true,
+    ),
   );
 };
 
@@ -1408,13 +1731,13 @@ function pointOptions(totals) {
   const wrap = el("div", "point-options");
   const maxUsable = Math.min(
     Math.floor(state.member.point / STORE.pointUnit) * STORE.pointUnit,
-    Math.floor(totals.beforePoint / STORE.pointUnit) * STORE.pointUnit
+    Math.floor(totals.beforePoint / STORE.pointUnit) * STORE.pointUnit,
   );
 
   const none = el(
     "button",
     `point-option${state.usedPoint === 0 ? " is-selected" : ""}`,
-    "사용 안 함"
+    "사용 안 함",
   );
   none.addEventListener("click", () => {
     state.usedPoint = 0;
@@ -1431,7 +1754,7 @@ function pointOptions(totals) {
   const all = el(
     "button",
     `point-option${state.usedPoint === maxUsable && maxUsable > 0 ? " is-selected" : ""}`,
-    `사용 가능 전액 ${point(maxUsable)}`
+    `사용 가능 전액 ${point(maxUsable)}`,
   );
   all.addEventListener("click", () => {
     state.usedPoint = maxUsable;
@@ -1449,7 +1772,9 @@ SCREENS["point-input"] = (modal, { maxUsable }) => {
   modal.appendChild(el("h2", "modal__title", "사용할 포인트를 입력해주세요"));
 
   const box = el("div", "modal__rows");
-  box.appendChild(rowItem("보유 포인트", point(state.member.point), "row__value--brand"));
+  box.appendChild(
+    rowItem("보유 포인트", point(state.member.point), "row__value--brand"),
+  );
   box.appendChild(rowItem("결제금액", won(calcTotals().beforePoint)));
   modal.appendChild(box);
 
@@ -1457,8 +1782,8 @@ SCREENS["point-input"] = (modal, { maxUsable }) => {
     el(
       "div",
       "point-rule",
-      `최소 ${point(STORE.pointMin)}부터 &nbsp;·&nbsp; ${STORE.pointUnit}P 단위로 사용 가능`
-    )
+      `최소 ${point(STORE.pointMin)}부터 &nbsp;·&nbsp; ${STORE.pointUnit}P 단위로 사용 가능`,
+    ),
   );
 
   const value = Number(state.pointInput || 0);
@@ -1507,10 +1832,13 @@ SCREENS["point-input"] = (modal, { maxUsable }) => {
         state.pointInput = (state.pointInput + key).replace(/^0+/, "");
       }
       openModal("point-input", { maxUsable });
-    })
+    }),
   );
 
-  const valid = value >= STORE.pointMin && value % STORE.pointUnit === 0 && value <= maxUsable;
+  const valid =
+    value >= STORE.pointMin &&
+    value % STORE.pointUnit === 0 &&
+    value <= maxUsable;
   modal.appendChild(
     actionRow([
       {
@@ -1531,7 +1859,7 @@ SCREENS["point-input"] = (modal, { maxUsable }) => {
           openPointScreen();
         },
       },
-    ])
+    ]),
   );
 };
 
@@ -1546,14 +1874,27 @@ function startPayment() {
 }
 
 SCREENS["pay-device"] = (modal, { method }) => {
-  const label = method === "card" ? "카드를 리더기에 꽂아주세요" : "간편결제 바코드를 스캔해주세요";
+  const label =
+    method === "card"
+      ? "카드를 리더기에 꽂아주세요"
+      : "간편결제 바코드를 스캔해주세요";
   alertScreen(modal, {
     icon: `<div class="spinner"></div>`,
     title: label,
     desc: "결제가 완료될 때까지 잠시만 기다려 주세요",
-    rows: [{ label: "결제금액", value: won(calcTotals().payable), className: "row__value--brand" }],
+    rows: [
+      {
+        label: "결제금액",
+        value: won(calcTotals().payable),
+        className: "row__value--brand",
+      },
+    ],
     actions: actionRow([
-      { label: "다른 결제수단 선택", variant: "primary", onClick: () => closeModal() },
+      {
+        label: "다른 결제수단 선택",
+        variant: "primary",
+        onClick: () => closeModal(),
+      },
     ]),
   });
 
@@ -1570,9 +1911,15 @@ SCREENS["pay-cash"] = (modal) => {
     title: "현금을 투입구에 넣어주세요",
     desc: "지폐와 동전을 넣으면 자동으로 계산됩니다",
     rows: [
-      { label: "필요 금액", value: won(calcTotals().payable), className: "row__value--brand" },
+      {
+        label: "필요 금액",
+        value: won(calcTotals().payable),
+        className: "row__value--brand",
+      },
     ],
-    actions: actionRow([{ label: "결제수단 다시 선택", variant: "neutral", onClick: closeModal }]),
+    actions: actionRow([
+      { label: "결제수단 다시 선택", variant: "neutral", onClick: closeModal },
+    ]),
   });
 
   setTimeout(() => {
@@ -1587,9 +1934,19 @@ SCREENS["van-waiting"] = (modal, { method }) => {
     icon: `<div class="spinner"></div>`,
     title: "결제를 진행하고 있습니다",
     desc: "카드를 빼거나 자리를 뜨지 마세요\n승인 전까지 취소할 수 없습니다",
-    rows: [{ label: "결제금액", value: won(calcTotals().payable), className: "row__value--brand" }],
+    rows: [
+      {
+        label: "결제금액",
+        value: won(calcTotals().payable),
+        className: "row__value--brand",
+      },
+    ],
     actions: actionRow([
-      { label: "직원 호출", variant: "ghost", onClick: () => openModal("store-help") },
+      {
+        label: "직원 호출",
+        variant: "ghost",
+        onClick: () => openModal("store-help"),
+      },
     ]),
   });
 
@@ -1612,26 +1969,41 @@ SCREENS["van-declined"] = (modal) => {
     icon: iconWarning(),
     title: "결제가 승인되지 않았습니다",
     desc: "카드사 응답 사유를 확인하고 다시 시도해 주세요",
-    rows: [{ label: "응답 코드", value: "051  한도 초과", className: "row__value--brand" }],
+    rows: [
+      {
+        label: "응답 코드",
+        value: "051  한도 초과",
+        className: "row__value--brand",
+      },
+    ],
     actions: actionRow(
       [
         {
           label: "다시 시도",
           variant: "primary",
-          onClick: () => openModal("van-waiting", { method: state.method || "card" }),
+          onClick: () =>
+            openModal("van-waiting", { method: state.method || "card" }),
         },
-        { label: "다른 결제수단 선택", variant: "outline", onClick: closeModal },
-        { label: "직원 호출", variant: "ghost", onClick: () => openModal("store-help") },
+        {
+          label: "다른 결제수단 선택",
+          variant: "outline",
+          onClick: closeModal,
+        },
+        {
+          label: "직원 호출",
+          variant: "ghost",
+          onClick: () => openModal("store-help"),
+        },
       ],
-      true
+      true,
     ),
   });
   modal.appendChild(
     el(
       "p",
       "modal__note text-center",
-      `재시도 ${state.vanRetry} / 3 · 3회 초과 시 매장 문의로 전환됩니다`
-    )
+      `재시도 ${state.vanRetry} / 3 · 3회 초과 시 매장 문의로 전환됩니다`,
+    ),
   );
 };
 
@@ -1642,17 +2014,27 @@ SCREENS["store-help"] = (modal) => {
     title: "결제가 완료되지 않았습니다",
     desc: "카드는 정상이며 결제 금액이 빠져나가지 않았습니다",
     rows: [
-      { label: "키오스크 번호", value: `${STORE.kioskNo}번`, className: "row__value--big" },
-      { label: "매장 담당자", value: STORE.managerPhone, className: "row__value--big" },
+      {
+        label: "키오스크 번호",
+        value: `${STORE.kioskNo}번`,
+        className: "row__value--big",
+      },
+      {
+        label: "매장 담당자",
+        value: STORE.managerPhone,
+        className: "row__value--big",
+      },
     ],
-    actions: actionRow([{ label: "확인", variant: "primary", onClick: closeModal }]),
+    actions: actionRow([
+      { label: "확인", variant: "primary", onClick: closeModal },
+    ]),
   });
   modal.appendChild(
     el(
       "p",
       "modal__note text-center",
-      `“${STORE.kioskNo}번 키오스크에서 결제가 안 됐어요” 라고 말씀해 주세요`
-    )
+      `“${STORE.kioskNo}번 키오스크에서 결제가 안 됐어요” 라고 말씀해 주세요`,
+    ),
   );
 };
 
@@ -1670,25 +2052,39 @@ SCREENS["complete"] = (modal, { totals }) => {
 
   modal.appendChild(el("div", "modal__icon", iconSuccess()));
   modal.appendChild(el("h2", "modal__title", "결제가 완료되었습니다"));
-  modal.appendChild(el("p", "modal__desc", "카드와 구매하신 상품을 확인해주세요"));
+  modal.appendChild(
+    el("p", "modal__desc", "카드와 구매하신 상품을 확인해주세요"),
+  );
 
   const box = el("div", "modal__rows");
-  box.appendChild(rowItem("최종 결제금액", won(totals.payable), "row__value--brand"));
+  box.appendChild(
+    rowItem("최종 결제금액", won(totals.payable), "row__value--brand"),
+  );
   if (totals.couponDiscount > 0) {
     box.appendChild(
       rowItem(
         "쿠폰 할인",
         `−${totals.couponDiscount.toLocaleString("ko-KR")}원`,
-        "row__value--brand"
-      )
+        "row__value--brand",
+      ),
     );
   }
   if (totals.usedPoint > 0) {
     box.appendChild(rowItem("포인트 사용", point(totals.usedPoint)));
   }
-  box.appendChild(rowItem("적립 포인트", `+${point(earned)}`, "row__value--success"));
-  if (!CONFIG.usePointEarn) {
-    box.appendChild(el("p", "modal__note", "키오스크 결제는 적립 제외됩니다."));
+  if (earned !== null) {
+    box.appendChild(
+      rowItem("적립 포인트", `+${point(earned)}`, "row__value--success"),
+    );
+    if (!CONFIG.usePointEarn) {
+      box.appendChild(
+        el("p", "modal__note", "키오스크 결제는 적립 제외됩니다."),
+      );
+    }
+  } else {
+    box.appendChild(
+      el("p", "modal__note", "비회원 결제는 포인트가 적립되지 않습니다."),
+    );
   }
   modal.appendChild(box);
 
@@ -1696,7 +2092,7 @@ SCREENS["complete"] = (modal, { totals }) => {
     actionRow([
       { label: "영수증 없이 완료", variant: "ghost", onClick: resetKiosk },
       { label: "영수증 출력", variant: "primary", onClick: resetKiosk },
-    ])
+    ]),
   );
 
   const countdown = el("p", "modal__note text-center", "");
@@ -1722,7 +2118,9 @@ SCREENS["item-soldout"] = (modal, { product }) => {
     title: "품절된 상품입니다",
     desc: "이 상품은 담을 수 없습니다. 매대에 되돌려 주세요",
     rows: [{ label: "상품명", value: product.name }],
-    actions: actionRow([{ label: "확인", variant: "primary", onClick: closeModal }]),
+    actions: actionRow([
+      { label: "확인", variant: "primary", onClick: closeModal },
+    ]),
   });
 };
 
@@ -1732,7 +2130,9 @@ SCREENS["item-unknown"] = (modal, { barcode }) => {
     title: "미등록 상품입니다",
     desc: "관리자에게 문의해 주세요",
     rows: [{ label: "읽은 바코드", value: barcode }],
-    actions: actionRow([{ label: "확인", variant: "primary", onClick: closeModal }]),
+    actions: actionRow([
+      { label: "확인", variant: "primary", onClick: closeModal },
+    ]),
   });
 };
 
@@ -1742,7 +2142,9 @@ SCREENS["item-age"] = (modal, { product }) => {
     title: "미성년자 판매불가 상품입니다",
     desc: "연령 확인이 필요한 상품입니다",
     rows: [{ label: "상품명", value: product.name }],
-    actions: actionRow([{ label: "확인", variant: "primary", onClick: closeModal }]),
+    actions: actionRow([
+      { label: "확인", variant: "primary", onClick: closeModal },
+    ]),
   });
 };
 
@@ -1770,7 +2172,11 @@ SCREENS["cancel-checkout"] = (modal) => {
     rows: [{ label: "담은 상품", value: `${totals.qty}개` }],
     actions: actionRow([
       { label: "취소", variant: "neutral", onClick: resetKiosk },
-      { label: "계속 결제", variant: "primary", onClick: () => openPointScreen() },
+      {
+        label: "계속 결제",
+        variant: "primary",
+        onClick: () => openPointScreen(),
+      },
     ]),
   });
 };
@@ -1781,8 +2187,16 @@ SCREENS["timeout"] = (modal) => {
     icon: iconWarning(),
     title: "10초 후 처음 화면으로 돌아갑니다",
     desc: "계속 이용하시려면 화면을 눌러 주세요\n돌아가면 담은 상품과 로그인이 모두 초기화됩니다",
-    rows: [{ label: "남은 시간", value: "10초", className: "row__value--big row__value--brand" }],
-    actions: actionRow([{ label: "계속 이용하기", variant: "primary", onClick: closeModal }]),
+    rows: [
+      {
+        label: "남은 시간",
+        value: "10초",
+        className: "row__value--big row__value--brand",
+      },
+    ],
+    actions: actionRow([
+      { label: "계속 이용하기", variant: "primary", onClick: closeModal },
+    ]),
   });
 
   let left = 10;
@@ -1803,7 +2217,11 @@ SCREENS["options"] = (modal) => {
   modal.className = "modal modal--wide";
   modal.appendChild(el("h2", "modal__title", "셀프계산대 운영 옵션"));
   modal.appendChild(
-    el("p", "modal__desc", "적용하면 화면을 새로 불러옵니다. 설정은 이 브라우저에 저장됩니다.")
+    el(
+      "p",
+      "modal__desc",
+      "적용하면 화면을 새로 불러옵니다. 설정은 이 브라우저에 저장됩니다.",
+    ),
   );
 
   const draft = { ...CONFIG };
@@ -1849,7 +2267,7 @@ SCREENS["options"] = (modal) => {
           location.reload();
         },
       },
-    ])
+    ]),
   );
 };
 
@@ -1981,47 +2399,60 @@ function bindEvents() {
     openModal("cancel-checkout");
   });
 
-  $("#btn-pay").addEventListener("click", () => {
-    if (state.member) {
-      openPointScreen();
-      return;
-    }
-    openModal("login-prompt");
-  });
-
-  $$(".method--pick").forEach((node) => {
+  /*
+    결제수단 타일을 누르면 그 수단으로 곧바로 결제를 시작한다.
+    별도의 결제하기 버튼은 두지 않는다. (04 기획 기준)
+  */
+  $$(".method").forEach((node) => {
     node.addEventListener("click", () => {
-      if (node.classList.contains("is-disabled")) {
+      const method = node.dataset.method;
+      if (state.cart.length === 0) {
+        showToast("담긴 상품이 없습니다");
+        return;
+      }
+      if (method === "cash" && !CONFIG.useCash) {
         showToast("이 매장은 현금결제를 사용하지 않습니다");
         return;
       }
-      state.method = node.dataset.method;
+      state.method = method;
       renderMethods();
-      renderSummary();
       resetIdleTimer();
+
+      if (state.member) {
+        openPointScreen();
+        return;
+      }
+      openModal("login-prompt");
     });
   });
 
   $("#btn-cat-prev").addEventListener("click", () => {
-    const index = CATEGORIES.indexOf(state.category);
-    state.category = CATEGORIES[(index - 1 + CATEGORIES.length) % CATEGORIES.length];
-    state.page = 0;
-    renderCatalog();
+    switchCatalog(() => {
+      const index = CATEGORIES.indexOf(state.category);
+      state.category =
+        CATEGORIES[(index - 1 + CATEGORIES.length) % CATEGORIES.length];
+      state.page = 0;
+    });
   });
   $("#btn-cat-next").addEventListener("click", () => {
-    const index = CATEGORIES.indexOf(state.category);
-    state.category = CATEGORIES[(index + 1) % CATEGORIES.length];
-    state.page = 0;
-    renderCatalog();
+    switchCatalog(() => {
+      const index = CATEGORIES.indexOf(state.category);
+      state.category = CATEGORIES[(index + 1) % CATEGORIES.length];
+      state.page = 0;
+    });
   });
 
   $("#btn-page-prev").addEventListener("click", () => {
-    state.page = Math.max(0, state.page - 1);
-    renderCatalog();
+    switchCatalog(() => {
+      state.page = Math.max(0, state.page - 1);
+    });
   });
   $("#btn-page-next").addEventListener("click", () => {
-    state.page += 1;
-    renderCatalog();
+    switchCatalog(() => {
+      const items = PRODUCTS.filter((p) => p.cat === state.category);
+      const last = Math.max(0, Math.ceil(items.length / 10) - 1);
+      state.page = Math.min(last, state.page + 1);
+    });
   });
 
   /* 스캐너 입력 : Enter 로 한 건이 끝난다. */
