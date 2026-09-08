@@ -2,135 +2,267 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#e83e35" />
-    <title>토마토 키오스크 시연</title>
-    <link rel="stylesheet" href="styles.css?v=20260903-5" />
+    <meta name="viewport" content="width=1080, initial-scale=1" />
+    <title>토마토 셀프 계산대 · 프로토타입</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="styles.css?v=2.0.0" />
   </head>
+
   <body>
-    <div class="stage-shell" id="stageShell">
-      <main class="kiosk" id="kiosk" aria-label="토마토 키오스크 1080×1920 데모">
-        <input
-          class="barcode-scanner-input"
-          id="barcodeScannerInput"
-          type="text"
-          inputmode="numeric"
-          autocomplete="off"
-          aria-label="시연용 상품 바코드 입력"
-        />
-        <header class="topbar">
-          <div class="brand" aria-label="토마토 셀프 계산대">
-            <strong>Tomato</strong>
-            <span>셀프 계산대</span>
-          </div>
-          <div class="store-context">
-            <span>현재 이용 매장</span>
-            <strong>토마토마트 본점</strong>
-          </div>
-          <div class="header-actions">
-            <button class="history-button" id="historyButton" type="button" disabled>내역 조회</button>
-            <div class="guide-hint" id="memberHeader" hidden>
-              <strong id="memberPhoneText"></strong>
-              <span id="memberPointText"></span>
-            </div>
-            <button class="point-lookup-button" id="pointLookupButton" type="button">포인트 조회</button>
-          </div>
-        </header>
+    <!--
+      물리 바코드 스캐너는 키보드처럼 동작한다.
+      숫자를 빠르게 연타하고 Enter 로 끝내므로, 화면에 보이지 않는 이 입력창에
+      포커스를 유지시켜 두고 Enter 시점에 값을 처리한다.
+    -->
+    <input
+      id="scanner-input"
+      class="scanner-input"
+      type="text"
+      autocomplete="off"
+      aria-hidden="true"
+      tabindex="-1"
+    />
 
-        <section class="guide-bar" aria-label="이용 안내">
-          <span class="guide-dot" aria-hidden="true"></span>
-          <strong>상품 바코드를 스캔하거나 오른쪽에서 직접 선택하세요</strong>
-        </section>
+    <main class="kiosk" id="kiosk">
+      <!-- ─────────────────────────────  헤더  ───────────────────────────── -->
+      <header class="header">
+        <button class="header__brand" id="btn-reset" type="button">
+          <span class="header__brand-name">Tomato</span>
+          <span class="header__brand-sub">셀프 계산대</span>
+        </button>
 
-        <section class="workspace">
-          <section class="cart-panel" aria-labelledby="cartTitle">
-            <div class="section-heading cart-heading">
-              <h1 id="cartTitle">상품 담기</h1>
-            </div>
-            <div class="cart-table-head" aria-hidden="true">
-              <span>상품명</span>
-              <span>단가</span>
-              <span>수량</span>
-              <span>금액</span>
-            </div>
-            <div class="cart-list" id="cartList" aria-live="polite"></div>
-          </section>
+        <button class="header__store" id="btn-options" type="button">
+          <span class="header__store-label">현재 이용 매장</span>
+          <span class="header__store-name">토마토마트 본점</span>
+        </button>
 
-          <section class="catalog-panel" aria-labelledby="catalogTitle">
-            <div class="section-heading catalog-heading">
-              <h2 id="catalogTitle">상품 직접 선택</h2>
-            </div>
-            <div class="category-navigation">
-              <button class="category-arrow" id="previousCategory" type="button" aria-label="이전 카테고리">
-                <img src="assets/chevron-left.png" alt="" />
-              </button>
-              <div class="category-tabs" id="categoryTabs" role="tablist"></div>
-              <button class="category-arrow next" id="nextCategory" type="button" aria-label="다음 카테고리">
-                <img src="assets/chevron-right.png" alt="" />
-              </button>
-            </div>
-            <div class="category-status" aria-live="polite" hidden>
-              <strong id="activeCategoryName">라면</strong>
-              <span id="categoryPosition">1 / 8</span>
-            </div>
-            <div class="product-grid" id="productGrid"></div>
-          </section>
-        </section>
-
-        <section class="payment-dock is-disabled" id="paymentDock" aria-label="결제 영역">
-          <div class="payment-heading">
-            <strong id="paymentGuideText">상품을 담으면 결제할 수 있습니다</strong>
-            <div class="payment-actions">
-              <button class="bag-button" id="addBagButton" type="button">봉투 구매</button>
-              <button class="cancel-button" id="clearCartButton" type="button">전체 취소</button>
-              <button class="pay-button" id="checkoutButton" type="button" disabled>
-                <span id="checkoutLabel">결제하기</span>
-              </button>
-            </div>
+        <div class="header__member" id="header-member">
+          <div class="header__member-info" id="member-info" hidden>
+            <span class="header__member-name" id="member-name"></span>
+            <span class="header__member-point" id="member-point"></span>
           </div>
-          <div class="payment-options">
-            <div class="total-amount-card">
-              <div>
-                <span>지금 결제할 금액</span>
-                <strong id="totalText">0원</strong>
-              </div>
-              <p id="amountHint">상품을 먼저 담아주세요</p>
-            </div>
-            <div class="payment-methods" id="paymentMethods">
-              <button class="payment-method is-selected" data-method="card" type="button">
-                <span class="method-icon card"><img src="assets/payment-card.png" alt="" /></span>
-                <strong>신용카드</strong>
-                <small>IC·MS·NFC 카드</small>
-              </button>
-              <button class="payment-method" data-method="easy" type="button">
-                <span class="method-icon easy"><img src="assets/payment-easy.png" alt="" /></span>
-                <strong>간편결제</strong>
-                <small>휴대폰 QR·바코드</small>
-                <span class="easy-pay-brands"><i>Kakao Pay</i><i>N pay</i><i>Alipay</i><i>WeChat</i><i>zero</i></span>
-              </button>
-              <button class="payment-method" data-method="cash" type="button">
-                <span class="method-icon cash"><img src="assets/payment-cash.png" alt="" /></span>
-                <strong>현금결제</strong>
-                <small>지폐·동전 사용</small>
-                <span class="cash-available">● 현재 사용 가능</span>
-              </button>
-            </div>
-          </div>
-          <span id="subtotalText" hidden>0원</span>
-          <span id="discountText" hidden>0P</span>
-          <span id="memberSummary" hidden>회원 확인 전</span>
-          <span id="cartCount" hidden>0</span>
-        </section>
-
-        <div class="toast" id="toast" role="status" aria-live="polite"></div>
-        <div class="modal-layer" id="modalLayer" hidden>
-          <div class="modal-backdrop"></div>
-          <section class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-            <div id="modalContent"></div>
-          </section>
+          <button class="btn btn--ghost btn--sm" id="btn-point-lookup" type="button">
+            포인트 조회
+          </button>
         </div>
-      </main>
+      </header>
+
+      <!-- ─────────────────────────────  안내 바  ───────────────────────────── -->
+      <div class="notice" id="notice">
+        <span class="notice__dot" aria-hidden="true"></span>
+        <span class="notice__text" id="notice-text">
+          상품 바코드를 스캔하거나 오른쪽에서 직접 선택하세요
+        </span>
+      </div>
+
+      <!-- ─────────────────────────────  본문  ───────────────────────────── -->
+      <div class="workspace">
+        <!-- 좌측 : 장바구니 -->
+        <section class="panel panel--cart">
+          <h2 class="panel__title">상품 담기</h2>
+
+          <div class="cart">
+            <div class="cart__head">
+              <span class="cart__col cart__col--name">상품명</span>
+              <span class="cart__col cart__col--price">단가</span>
+              <span class="cart__col cart__col--qty">수량</span>
+              <span class="cart__col cart__col--amount">금액</span>
+              <span class="cart__col cart__col--remove" aria-hidden="true"></span>
+            </div>
+
+            <ul class="cart__list" id="cart-list"></ul>
+
+            <div class="cart__empty" id="cart-empty">
+              <div class="cart__empty-icon" aria-hidden="true">
+                <svg viewBox="0 0 96 96" width="96" height="96">
+                  <circle cx="48" cy="48" r="48" fill="var(--c-bg-subtle)" />
+                  <path
+                    d="M32 38h32l-3 30a6 6 0 0 1-6 5H41a6 6 0 0 1-6-5z"
+                    fill="none"
+                    stroke="var(--c-border-strong)"
+                    stroke-width="4"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M40 38v-6a8 8 0 0 1 16 0v6"
+                    fill="none"
+                    stroke="var(--c-border-strong)"
+                    stroke-width="4"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </div>
+              <p class="cart__empty-text">담긴 상품이 없습니다</p>
+              <p class="cart__empty-sub">바코드를 스캔하거나 오른쪽에서 선택해 주세요</p>
+            </div>
+          </div>
+
+          <div class="summary">
+            <h3 class="summary__title">결제 요약</h3>
+            <div class="summary__metrics">
+              <div class="metric">
+                <span class="metric__label">총 수량</span>
+                <strong class="metric__value" id="sum-qty">0개</strong>
+              </div>
+              <div class="metric metric--discount">
+                <span class="metric__label">상품 할인</span>
+                <strong class="metric__value" id="sum-discount">0원</strong>
+              </div>
+              <div class="metric metric--final">
+                <span class="metric__label">예상 결제금액</span>
+                <strong class="metric__value" id="sum-total">0원</strong>
+              </div>
+              <button class="metric metric--cancel" id="btn-clear-cart" type="button">
+                <span>전체</span>
+                <span>취소</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 우측 : 상품 직접 선택 -->
+        <section class="panel panel--catalog">
+          <h2 class="panel__title">상품 직접 선택</h2>
+
+          <div class="catalog">
+            <div class="catalog__tabs">
+              <button
+                class="catalog__arrow"
+                id="btn-cat-prev"
+                type="button"
+                aria-label="이전 카테고리"
+              >
+                ‹
+              </button>
+              <div class="catalog__tab-track" id="category-tabs"></div>
+              <button
+                class="catalog__arrow"
+                id="btn-cat-next"
+                type="button"
+                aria-label="다음 카테고리"
+              >
+                ›
+              </button>
+            </div>
+
+            <!--
+              프리셋 격자는 항상 2열 × 5행(최대 25개 중 페이지당 10개) 규격을 유지한다.
+              grid-auto-flow: column 이므로 상품이 5개뿐인 마지막 페이지는
+              1열만 채워지고 오른쪽 열은 의도적으로 비워 둔다.
+            -->
+            <div class="catalog__grid" id="product-grid"></div>
+
+            <div class="catalog__pager">
+              <button
+                class="pager__arrow"
+                id="btn-page-prev"
+                type="button"
+                aria-label="이전 페이지"
+              >
+                ‹
+              </button>
+              <div class="pager__dots" id="page-dots"></div>
+              <button
+                class="pager__arrow"
+                id="btn-page-next"
+                type="button"
+                aria-label="다음 페이지"
+              >
+                ›
+              </button>
+            </div>
+          </div>
+
+          <button class="btn btn--outline btn--block" id="btn-bag" type="button">봉투 구매</button>
+        </section>
+      </div>
+
+      <!-- ─────────────────────────────  하단 결제 바  ───────────────────────────── -->
+      <footer class="checkout">
+        <div class="checkout__head">
+          <p class="checkout__guide" id="checkout-guide">
+            결제수단을 선택한 뒤 결제하기를 눌러주세요
+          </p>
+          <div class="checkout__actions">
+            <button class="btn btn--neutral" id="btn-cancel-checkout" type="button">
+              계산 취소
+            </button>
+            <button class="btn btn--primary" id="btn-pay" type="button" disabled>결제하기</button>
+          </div>
+        </div>
+
+        <div class="methods" id="methods">
+          <div class="method method--amount">
+            <span class="method__label">지금 결제할 금액</span>
+            <strong class="method__amount" id="pay-amount">0원</strong>
+            <span class="method__note">결제하기를 누르면 회원 확인 후 진행됩니다</span>
+          </div>
+
+          <button class="method method--pick" data-method="card" type="button">
+            <span class="method__icon" aria-hidden="true">
+              <svg viewBox="0 0 40 40" width="40" height="40">
+                <rect x="4" y="9" width="32" height="22" rx="4" fill="var(--c-info)" />
+                <rect x="4" y="14" width="32" height="5" fill="var(--c-info-dark)" />
+                <rect x="9" y="24" width="10" height="3" rx="1.5" fill="#ffffff" />
+              </svg>
+            </span>
+            <span class="method__name">신용카드</span>
+            <span class="method__desc">IC · MS · NFC 카드</span>
+            <span class="method__state" data-state="card">현재 사용 가능</span>
+          </button>
+
+          <button class="method method--pick" data-method="easy" type="button">
+            <span class="method__icon" aria-hidden="true">
+              <svg viewBox="0 0 40 40" width="40" height="40">
+                <rect x="6" y="6" width="28" height="28" rx="6" fill="var(--c-brand)" />
+                <rect x="12" y="12" width="7" height="7" rx="1.5" fill="#ffffff" />
+                <rect x="21" y="12" width="7" height="7" rx="1.5" fill="#ffffff" />
+                <rect x="12" y="21" width="7" height="7" rx="1.5" fill="#ffffff" />
+                <rect x="23" y="23" width="5" height="5" rx="1" fill="#ffffff" />
+              </svg>
+            </span>
+            <span class="method__name">간편결제</span>
+            <span class="method__desc">QR · 바코드 인식</span>
+            <span class="method__state" data-state="easy">현재 사용 가능</span>
+          </button>
+
+          <button class="method method--pick" data-method="cash" type="button">
+            <span class="method__icon" aria-hidden="true">
+              <svg viewBox="0 0 40 40" width="40" height="40">
+                <rect x="4" y="11" width="32" height="18" rx="3" fill="var(--c-success)" />
+                <circle cx="20" cy="20" r="5.5" fill="#ffffff" />
+                <circle cx="20" cy="20" r="3" fill="var(--c-success)" />
+              </svg>
+            </span>
+            <span class="method__name">현금결제</span>
+            <span class="method__desc">지폐 · 동전 사용</span>
+            <span class="method__state" data-state="cash">현재 사용 가능</span>
+          </button>
+        </div>
+      </footer>
+    </main>
+
+    <!-- ─────────────────────────────  모달 루트  ───────────────────────────── -->
+    <div class="overlay" id="overlay" hidden>
+      <div
+        class="modal"
+        id="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+      ></div>
     </div>
-    <script src="app.js?v=20260903-5"></script>
+
+    <!-- 토스트 : 스캔 결과처럼 짧게 알리는 메시지 -->
+    <div class="toast" id="toast" hidden></div>
+
+    <script src="app.js?v=2.0.0"></script>
   </body>
 </html>
