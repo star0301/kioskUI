@@ -642,6 +642,20 @@ const state = {
    ========================================================================== */
 
 const $ = (selector) => document.querySelector(selector);
+
+/*
+  요소가 없어도 초기화가 멈추지 않도록 감싼다.
+  HTML 을 고치면서 id 가 사라지면 예전에는 여기서 예외가 나
+  이후 렌더링이 통째로 실행되지 않았다.
+*/
+function on(selector, event, handler) {
+  const node = document.querySelector(selector);
+  if (!node) {
+    console.warn(`[bind] ${selector} 를 찾지 못했습니다`);
+    return;
+  }
+  node.addEventListener(event, handler);
+}
 const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 
 function won(value) {
@@ -907,7 +921,6 @@ function renderSummary() {
   $("#sum-discount").textContent =
     `−${(totals.saleDiscount + totals.couponDiscount).toLocaleString("ko-KR")}원`;
   $("#sum-total").textContent = won(totals.payable);
-  $("#pay-amount").textContent = won(totals.payable);
 }
 
 /* 격자를 잠깐 흐리게 했다가 다시 그려 전환이 눈에 보이도록 한다. */
@@ -1038,10 +1051,6 @@ function renderMethods() {
       stateLabel.textContent = "현재 사용 가능";
     }
   });
-
-  $("#checkout-guide").textContent = empty
-    ? "상품을 담으면 결제할 수 있습니다"
-    : "결제하실 방법을 선택해 주세요";
 
   const bagBtn = $("#btn-bag");
   bagBtn.classList.toggle("is-disabled", !CONFIG.useBag);
@@ -2380,25 +2389,17 @@ function resetIdleTimer() {
 }
 
 function bindEvents() {
-  $("#btn-options").addEventListener("click", () => openModal("options"));
-  $("#btn-reset").addEventListener("click", () => openModal("reset-confirm"));
-  $("#btn-point-lookup").addEventListener("click", () => openModal("login"));
-  $("#btn-bag").addEventListener("click", () => openModal("bag"));
-  $("#btn-clear-cart").addEventListener("click", () => {
+  on("#btn-options", "click", () => openModal("options"));
+  on("#btn-reset", "click", () => openModal("reset-confirm"));
+  on("#btn-point-lookup", "click", () => openModal("login"));
+  on("#btn-bag", "click", () => openModal("bag"));
+  on("#btn-clear-cart", "click", () => {
     if (state.cart.length === 0) {
       showToast("담긴 상품이 없습니다");
       return;
     }
     openModal("clear-cart");
   });
-  $("#btn-cancel-checkout").addEventListener("click", () => {
-    if (state.cart.length === 0) {
-      showToast("담긴 상품이 없습니다");
-      return;
-    }
-    openModal("cancel-checkout");
-  });
-
   /*
     결제수단 타일을 누르면 그 수단으로 곧바로 결제를 시작한다.
     별도의 결제하기 버튼은 두지 않는다. (04 기획 기준)
@@ -2426,7 +2427,7 @@ function bindEvents() {
     });
   });
 
-  $("#btn-cat-prev").addEventListener("click", () => {
+  on("#btn-cat-prev", "click", () => {
     switchCatalog(() => {
       const index = CATEGORIES.indexOf(state.category);
       state.category =
@@ -2434,7 +2435,7 @@ function bindEvents() {
       state.page = 0;
     });
   });
-  $("#btn-cat-next").addEventListener("click", () => {
+  on("#btn-cat-next", "click", () => {
     switchCatalog(() => {
       const index = CATEGORIES.indexOf(state.category);
       state.category = CATEGORIES[(index + 1) % CATEGORIES.length];
@@ -2442,12 +2443,12 @@ function bindEvents() {
     });
   });
 
-  $("#btn-page-prev").addEventListener("click", () => {
+  on("#btn-page-prev", "click", () => {
     switchCatalog(() => {
       state.page = Math.max(0, state.page - 1);
     });
   });
-  $("#btn-page-next").addEventListener("click", () => {
+  on("#btn-page-next", "click", () => {
     switchCatalog(() => {
       const items = PRODUCTS.filter((p) => p.cat === state.category);
       const last = Math.max(0, Math.ceil(items.length / 10) - 1);
