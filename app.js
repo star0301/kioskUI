@@ -974,8 +974,8 @@ function renderCatalog() {
           img.src = sources[attempt];
           return;
         }
+        /* 이미지가 없으면 자리만 비워 둔다. */
         img.remove();
-        imageBox.appendChild(el("span", "product__image-empty", "이미지"));
       });
       imageBox.appendChild(img);
       card.appendChild(imageBox);
