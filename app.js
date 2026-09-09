@@ -625,10 +625,10 @@ const BAGS = [
 ];
 
 const MEMBERS = [
-  { type: "app", key: "20250708000115", name: "갓준경", point: 5000 },
-  { type: "phone", key: "01012452534", name: "휴대폰 회원", point: 2000 },
-  { type: "phone", key: "01011111111", name: "휴대폰 회원", point: 3000 },
-  { type: "phone", key: "01000000000", name: "휴대폰 회원", point: 0 },
+  { type: "app", key: "20250708000115", name: "갓준경", point: 5000, pin: "1234" },
+  { type: "phone", key: "01012452534", name: "휴대폰 회원", point: 2000, pin: "1234" },
+  { type: "phone", key: "01011111111", name: "휴대폰 회원", point: 3000, pin: "1234" },
+  { type: "phone", key: "01000000000", name: "휴대폰 회원", point: 0, pin: "1234" },
 ];
 
 const MEMBER_STORAGE_KEY = "tomato-kiosk-phone-members";
@@ -643,7 +643,7 @@ function loadRegisteredMembers() {
         member.type === "phone" &&
         !MEMBERS.some((item) => item.key === member.key)
       ) {
-        MEMBERS.push(member);
+        MEMBERS.push({ ...member, pin: String(member.pin || "1234") });
       }
     });
   } catch (error) {
@@ -675,6 +675,10 @@ const state = {
   pointInput: "",
   signupPhone: "",
   signupPin: "",
+  pointPinInput: "",
+  pointPinAttempts: 0,
+  pointPinReturnScreen: "point-phone",
+  pointPinReturnData: {},
   vanRetry: 0,
   idleTimer: null,
   warnTimer: null,
@@ -1656,6 +1660,7 @@ SCREENS["signup-confirm"] = (modal) => {
             key: `010${state.signupPhone}`,
             name: "휴대폰 회원",
             point: STORE.signupBonus,
+            pin: state.signupPin,
             isNew: true,
           };
           MEMBERS.push(newMember);
@@ -1860,11 +1865,40 @@ function pointOptions(totals) {
   all.addEventListener("click", () => {
     state.usedPoint = maxUsable;
     renderSummary();
-    openPointScreen();
+    beginPointPinVerification("point-app");
   });
 
   wrap.append(none, direct, all);
   return wrap;
+}
+
+/*
+  04-PIN 진입점.
+  포인트를 사용하지 않을 때는 비밀번호 확인이 필요 없으므로 바로 결제한다.
+  뒤로가기를 위해 직전 포인트 화면과 그 화면의 데이터를 함께 보관한다.
+*/
+function beginPointPinVerification(returnScreen, returnData = {}) {
+  if (!state.member || state.usedPoint <= 0) {
+    startPayment();
+    return;
+  }
+
+  state.pointPinInput = "";
+  state.pointPinAttempts = 0;
+  state.pointPinReturnScreen = returnScreen || "point-phone";
+  state.pointPinReturnData = { ...returnData };
+  openModal("point-pin");
+}
+
+function returnFromPointPin() {
+  const returnScreen = state.pointPinReturnScreen || "point-phone";
+  const returnData = { ...state.pointPinReturnData };
+  state.pointPinInput = "";
+  if (returnScreen === "point-input") {
+    openModal(returnScreen, returnData);
+    return;
+  }
+  openPointScreen();
 }
 
 /* ── 04-INP 포인트 직접 입력 ──────────────────────────────────────────────── */
@@ -2485,6 +2519,10 @@ function resetKiosk() {
   state.pointInput = "";
   state.signupPhone = "";
   state.signupPin = "";
+  state.pointPinInput = "";
+  state.pointPinAttempts = 0;
+  state.pointPinReturnScreen = "point-phone";
+  state.pointPinReturnData = {};
   state.vanRetry = 0;
   state.category = CATEGORIES[0];
   state.page = 0;

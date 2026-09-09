@@ -608,6 +608,7 @@ SCREENS["signup-confirm"] = function (modal) {
             key: "010" + state.signupPhone,
             name: "휴대폰 회원",
             point: STORE.signupBonus,
+            pin: state.signupPin,
             isNew: true,
           };
           MEMBERS.push(newMember);
@@ -739,7 +740,13 @@ SCREENS["point-app"] = function (modal, data) {
       {
         label: "포인트 적용하고 결제 계속",
         variant: "primary",
-        onClick: startPayment,
+        onClick: function () {
+          if (state.usedPoint > 0) {
+            beginPointPinVerification("point-app");
+            return;
+          }
+          startPayment();
+        },
       },
       {
         label: "계산 취소",
@@ -771,7 +778,13 @@ SCREENS["point-phone"] = function (modal, data) {
       {
         label: "적용하고 결제 계속",
         variant: "primary",
-        onClick: startPayment,
+        onClick: function () {
+          if (state.usedPoint > 0) {
+            beginPointPinVerification("point-phone");
+            return;
+          }
+          startPayment();
+        },
       },
       {
         label: "계산 취소",
@@ -832,6 +845,10 @@ function pointOptionsForPhone(totals) {
       }
       state.usedPoint = item.value;
       renderSummary();
+      if (item.value > 0) {
+        beginPointPinVerification("point-phone");
+        return;
+      }
       openPointScreen();
     });
     group.appendChild(button);
@@ -1054,11 +1071,97 @@ SCREENS["point-input"] = function (modal, data) {
         onClick: function () {
           state.usedPoint = value;
           renderSummary();
-          openPointScreen();
+          beginPointPinVerification("point-input", {
+            maxUsable: maxUsable,
+          });
         },
       },
     ]),
   );
+};
+
+/* 04-PIN 포인트 결제 비밀번호 입력 */
+SCREENS["point-pin"] = function (modal) {
+  setModal(modal, "modal--keypad modal--pin-verify");
+  modal.appendChild(backButton(returnFromPointPin));
+  modalIntro(
+    modal,
+    "결제 비밀번호를 입력하세요",
+    "포인트 사용을 위해 등록한 결제 비밀번호 4자리를 입력해주세요.\n5회 연속 틀리면 포인트를 적용할 수 없습니다.",
+    "숫자 4자리 결제 비밀번호",
+  );
+
+  modal.appendChild(pinDisplay(state.pointPinInput.replace(/./g, "•")));
+
+  if (state.pointPinAttempts > 0) {
+    modal.appendChild(
+      el(
+        "p",
+        "pin-attempt-note",
+        "비밀번호가 일치하지 않습니다 · " +
+          (5 - state.pointPinAttempts) +
+          "회 남았습니다",
+      ),
+    );
+  }
+
+  modal.appendChild(
+    keypadExact(function (key) {
+      state.pointPinInput = handleDigits(state.pointPinInput, key, 4);
+      openModal("point-pin");
+    }),
+  );
+
+  modal.appendChild(
+    actionRow([
+      {
+        label: "확인",
+        variant: "primary",
+        disabled: state.pointPinInput.length !== 4,
+        onClick: function () {
+          const expectedPin = String(state.member.pin || "1234");
+          if (state.pointPinInput === expectedPin) {
+            state.pointPinInput = "";
+            state.pointPinAttempts = 0;
+            startPayment();
+            return;
+          }
+
+          state.pointPinAttempts += 1;
+          state.pointPinInput = "";
+          if (state.pointPinAttempts >= 5) {
+            openModal("point-pin-error");
+            return;
+          }
+          openModal("point-pin");
+        },
+      },
+    ]),
+  );
+};
+
+/* E-PIN-01 결제 비밀번호 5회 오류 */
+SCREENS["point-pin-error"] = function (modal) {
+  designAlert(modal, {
+    icon: iconWarning(),
+    title: "포인트를 적용할 수 없습니다.",
+    desc: "결제 비밀번호가 5회 연속 일치하지 않았습니다.\n포인트 사용을 해제하고 포인트 선택 화면으로 돌아갑니다.",
+    actions: actionRow([
+      {
+        label: "닫기",
+        variant: "primary",
+        onClick: function () {
+          state.usedPoint = 0;
+          state.pointInput = "";
+          state.pointPinInput = "";
+          state.pointPinAttempts = 0;
+          state.pointPinReturnData = {};
+          renderSummary();
+          openPointScreen();
+        },
+      },
+    ]),
+  });
 };
 
 /* H1 APP 포인트 적립·사용 내역 */

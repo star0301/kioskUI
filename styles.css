@@ -263,6 +263,14 @@ p {
   color: var(--c-brand);
 }
 
+/* 로그인 전·후 모두 헤더의 조회 액션은 브랜드 Primary 버튼으로 표시한다. */
+#btn-point-lookup {
+  min-width: 108px;
+  border-color: var(--c-brand);
+  background: var(--c-brand);
+  color: var(--c-text-inverse);
+}
+
 /* ── 안내 바 ────────────────────────────────────────────────────────────── */
 
 .notice {
@@ -1887,7 +1895,7 @@ p {
 }
 
 .phone-slot.is-filled {
-  border-bottom-color: var(--c-brand);
+  border-bottom-color: transparent;
 }
 
 .pin-display {
@@ -1913,6 +1921,16 @@ p {
 
 .pin-slot.is-filled {
   border-bottom-color: var(--c-brand);
+}
+
+.pin-attempt-note {
+  width: 100%;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--c-brand);
+  text-align: center;
 }
 
 .keypad {
@@ -1943,6 +1961,19 @@ p {
 .modal--keypad .pin-display,
 .modal--keypad .keypad {
   width: 100%;
+}
+
+/* 04-PIN은 Figma의 58px 슬롯과 70px 입력 컨테이너 비율을 따른다. */
+.modal--pin-verify .pin-display {
+  grid-template-columns: repeat(4, 58px);
+  align-items: center;
+  min-height: 70px;
+  gap: 16px;
+  padding: 14px;
+}
+
+.modal--pin-verify .pin-slot {
+  height: 36px;
 }
 
 .modal--signup-confirm .row__value {
