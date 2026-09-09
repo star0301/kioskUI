@@ -741,7 +741,7 @@ SCREENS["point-app"] = function (modal, data) {
         label: "포인트 적용하고 결제 계속",
         variant: "primary",
         onClick: function () {
-          if (state.usedPoint > 0) {
+          if (state.usedPoint > 0 && !state.pointPinVerified) {
             beginPointPinVerification("point-app");
             return;
           }
@@ -779,7 +779,7 @@ SCREENS["point-phone"] = function (modal, data) {
         label: "적용하고 결제 계속",
         variant: "primary",
         onClick: function () {
-          if (state.usedPoint > 0) {
+          if (state.usedPoint > 0 && !state.pointPinVerified) {
             beginPointPinVerification("point-phone");
             return;
           }
@@ -828,22 +828,28 @@ function pointOptionsForPhone(totals) {
   [
     { label: "사용 안 함", value: 0 },
     { label: "직접 입력", direct: true },
-    { label: "사용 가능 전액<br><strong>" + point(maxUsable) + "</strong>", value: maxUsable },
+    { label: "사용 가능 전액", value: maxUsable, all: true },
   ].forEach(function (item) {
     const button = el(
       "button",
       "point-option" + (!item.direct && state.usedPoint === item.value ? " is-selected" : ""),
-      item.label,
+      item.all ? undefined : item.label,
     );
     button.type = "button";
+    if (item.all) {
+      button.appendChild(el("span", "point-option__label", item.label));
+      button.appendChild(el("strong", "point-option__value", point(maxUsable)));
+    }
     button.disabled = !item.direct && item.value > 0 && item.value < STORE.pointMin;
     button.addEventListener("click", function () {
       if (item.direct) {
+        state.pointPinVerified = false;
         state.pointInput = state.usedPoint ? String(state.usedPoint) : "";
         openModal("point-input", { maxUsable: maxUsable });
         return;
       }
       state.usedPoint = item.value;
+      state.pointPinVerified = false;
       renderSummary();
       if (item.value > 0) {
         beginPointPinVerification("point-phone");
@@ -1123,7 +1129,9 @@ SCREENS["point-pin"] = function (modal) {
           if (state.pointPinInput === expectedPin) {
             state.pointPinInput = "";
             state.pointPinAttempts = 0;
-            startPayment();
+            state.pointPinVerified = true;
+            openPointScreen();
+            showToast("포인트 사용 인증이 완료되었습니다");
             return;
           }
 
@@ -1155,6 +1163,7 @@ SCREENS["point-pin-error"] = function (modal) {
           state.pointInput = "";
           state.pointPinInput = "";
           state.pointPinAttempts = 0;
+          state.pointPinVerified = false;
           state.pointPinReturnData = {};
           renderSummary();
           openPointScreen();

@@ -677,6 +677,7 @@ const state = {
   signupPin: "",
   pointPinInput: "",
   pointPinAttempts: 0,
+  pointPinVerified: false,
   pointPinReturnScreen: "point-phone",
   pointPinReturnData: {},
   vanRetry: 0,
@@ -1847,12 +1848,14 @@ function pointOptions(totals) {
   );
   none.addEventListener("click", () => {
     state.usedPoint = 0;
+    state.pointPinVerified = false;
     renderSummary();
     openPointScreen();
   });
 
   const direct = el("button", "point-option", "직접 입력");
   direct.addEventListener("click", () => {
+    state.pointPinVerified = false;
     state.pointInput = "";
     openModal("point-input", { maxUsable });
   });
@@ -1860,8 +1863,9 @@ function pointOptions(totals) {
   const all = el(
     "button",
     `point-option${state.usedPoint === maxUsable && maxUsable > 0 ? " is-selected" : ""}`,
-    `사용 가능 전액 ${point(maxUsable)}`,
   );
+  all.appendChild(el("span", "point-option__label", "사용 가능 전액"));
+  all.appendChild(el("strong", "point-option__value", point(maxUsable)));
   all.addEventListener("click", () => {
     state.usedPoint = maxUsable;
     renderSummary();
@@ -1885,6 +1889,7 @@ function beginPointPinVerification(returnScreen, returnData = {}) {
 
   state.pointPinInput = "";
   state.pointPinAttempts = 0;
+  state.pointPinVerified = false;
   state.pointPinReturnScreen = returnScreen || "point-phone";
   state.pointPinReturnData = { ...returnData };
   openModal("point-pin");
@@ -2521,6 +2526,7 @@ function resetKiosk() {
   state.signupPin = "";
   state.pointPinInput = "";
   state.pointPinAttempts = 0;
+  state.pointPinVerified = false;
   state.pointPinReturnScreen = "point-phone";
   state.pointPinReturnData = {};
   state.vanRetry = 0;

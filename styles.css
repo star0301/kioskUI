@@ -1859,43 +1859,66 @@ p {
 
 /* 휴대폰 번호와 PIN은 문자 '_' 대신 독립된 입력 슬롯으로 그린다. */
 .phone-display {
+  display: grid;
+  grid-template-columns: max-content max-content 130px max-content 130px;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   height: 70px;
-  gap: 8px;
-  padding: 0 14px;
+  column-gap: 10px;
+  padding: 0 18px;
   border-width: 1.5px;
   font-size: 22px;
   letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 .phone-display__prefix,
 .phone-display__dash {
-  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
   font-weight: 700;
+  line-height: 1;
   color: var(--c-text-primary);
 }
 
 .phone-slots {
   display: grid;
-  grid-template-columns: repeat(4, 24px);
-  align-items: end;
-  gap: 6px;
+  grid-template-columns: repeat(4, 28px);
+  align-items: center;
+  justify-content: space-between;
+  width: 130px;
+  height: 34px;
 }
 
 .phone-slot {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 30px;
-  border-bottom: 2px solid var(--c-text-primary);
-  font-size: 19px;
+  width: 28px;
+  height: 34px;
+  border-bottom: 0;
+  font-size: 22px;
   font-weight: 700;
-  line-height: 28px;
+  line-height: 1;
 }
 
-.phone-slot.is-filled {
-  border-bottom-color: transparent;
+.phone-slot::after {
+  position: absolute;
+  right: 0;
+  bottom: 1px;
+  left: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--c-text-primary);
+  content: "";
+}
+
+.phone-slot.is-filled::after {
+  opacity: 0;
 }
 
 .pin-display {
@@ -2045,15 +2068,23 @@ p {
 }
 
 .point-option {
+  flex-direction: column;
+  gap: 4px;
   padding: 12px;
   line-height: 1.35;
   text-align: center;
 }
 
-.point-option strong {
-  display: inline-block;
-  margin-top: 4px;
+.point-option__label,
+.point-option__value {
+  display: block;
+  width: 100%;
+  white-space: nowrap;
+}
+
+.point-option__value {
   font-size: 20px;
+  line-height: 1.2;
 }
 
 .point-overview {
