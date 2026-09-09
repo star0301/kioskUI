@@ -278,6 +278,7 @@ SCREENS["login-prompt"] = function (modal) {
           label: "회원 혜택 확인하기",
           variant: "primary",
           onClick: function () {
+            state.loginPurpose = "checkout";
             openModal("login");
           },
         },
@@ -296,6 +297,10 @@ SCREENS["login-prompt"] = function (modal) {
 SCREENS["login"] = function (modal) {
   setModal(modal, "modal--wide modal--login");
   modal.appendChild(backButton(function () {
+    if (state.loginPurpose === "history") {
+      closeModal();
+      return;
+    }
     openModal("login-prompt");
   }));
   modalIntro(modal, "회원 정보를 확인해주세요");
@@ -525,7 +530,7 @@ SCREENS["signup-duplicate"] = function (modal, data) {
         onClick: function () {
           state.member = Object.assign({}, data.member);
           renderMember();
-          openPointScreen();
+          openLoginSuccessDestination();
         },
       },
     ]),
@@ -615,7 +620,7 @@ SCREENS["signup-confirm"] = function (modal) {
           persistRegisteredMember(newMember);
           state.member = Object.assign({}, newMember);
           renderMember();
-          openPointScreen();
+          openLoginSuccessDestination();
         },
       },
     ]),

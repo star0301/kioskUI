@@ -2249,11 +2249,13 @@ p {
 .history-cell {
   display: flex;
   align-items: center;
+  justify-content: center;
   min-height: 58px;
   padding: 12px;
   border-right: 1px solid var(--c-border-subtle);
   border-bottom: 1px solid var(--c-border-subtle);
   font-size: 15px;
+  text-align: center;
 }
 
 .history-cell:nth-child(4n) {

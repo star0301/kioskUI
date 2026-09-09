@@ -671,6 +671,7 @@ const state = {
   method: null,
   modal: null,
   modalData: {},
+  loginPurpose: "checkout",
   phoneInput: "",
   pointInput: "",
   signupPhone: "",
@@ -1481,10 +1482,24 @@ function lookupPhone(fullNumber) {
     state.member = { ...member };
     state.phoneInput = "";
     renderMember();
-    openPointScreen();
+    openLoginSuccessDestination();
     return;
   }
   openModal("not-member", { phone: fullNumber });
+}
+
+/*
+  같은 로그인 화면이라도 진입 목적에 따라 성공 후 화면이 달라진다.
+  - 결제수단에서 진입: 포인트 선택 화면
+  - 헤더의 포인트 조회에서 진입: 포인트 적립·사용 내역
+*/
+function openLoginSuccessDestination() {
+  if (state.loginPurpose === "history") {
+    state.loginPurpose = "checkout";
+    openModal("point-history");
+    return;
+  }
+  openPointScreen();
 }
 
 /* ── 03-B 회원 미가입 안내 ────────────────────────────────────────────────── */
@@ -2472,7 +2487,7 @@ function handleScan(code) {
     state.member = { ...member };
     renderMember();
     showToast(`${member.name} 님, 환영합니다`);
-    openPointScreen();
+    openLoginSuccessDestination();
     return;
   }
 
@@ -2520,6 +2535,7 @@ function resetKiosk() {
   state.member = null;
   state.usedPoint = 0;
   state.method = null;
+  state.loginPurpose = "checkout";
   state.phoneInput = "";
   state.pointInput = "";
   state.signupPhone = "";
@@ -2557,9 +2573,14 @@ function resetIdleTimer() {
 function bindEvents() {
   on("#btn-options", "click", () => openModal("options"));
   on("#btn-reset", "click", () => openModal("reset-confirm"));
-  on("#btn-point-lookup", "click", () =>
-    openModal(state.member ? "point-history" : "login"),
-  );
+  on("#btn-point-lookup", "click", () => {
+    if (state.member) {
+      openModal("point-history");
+      return;
+    }
+    state.loginPurpose = "history";
+    openModal("login");
+  });
   on("#btn-bag", "click", () => openModal("bag"));
   on("#btn-clear-cart", "click", () => {
     if (state.cart.length === 0) {
@@ -2595,6 +2616,7 @@ function bindEvents() {
         openPointScreen();
         return;
       }
+      state.loginPurpose = "checkout";
       openModal("login-prompt");
     });
   });
