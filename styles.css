@@ -312,10 +312,24 @@ p {
   grid-column: 1 / -1;
 }
 
-#btn-bag.btn--cart-wide {
-  flex: 0 0 auto;
+.workspace.is-direct-select-off .summary__metrics {
+  grid-template-columns: 0.9fr 1.5fr 2.2fr 1fr 1fr;
+}
+
+#btn-bag.btn--cart-inline {
   width: auto;
-  margin: 0 16px 16px;
+  min-height: 0;
+  margin: 0;
+  padding: var(--sp-12) var(--sp-8);
+  border: 2px solid var(--c-brand);
+  border-radius: var(--r-md);
+  background: var(--c-brand-soft);
+  box-shadow: var(--shadow-button);
+  font-size: var(--fs-17);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--c-brand);
+  white-space: nowrap;
 }
 
 .panel {

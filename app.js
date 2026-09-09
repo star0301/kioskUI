@@ -916,13 +916,14 @@ function renderTransaction() {
 function renderOperationalLayout() {
   const workspace = $(".workspace");
   const catalog = $(".panel--catalog");
-  const cartPanel = $(".panel--cart");
+  const summaryMetrics = $(".summary__metrics");
+  const clearCartButton = $("#btn-clear-cart");
   const bagButton = $("#btn-bag");
   const directSelectOff = !CONFIG.useDirectSelect;
   workspace.classList.toggle("is-direct-select-off", directSelectOff);
-  bagButton.classList.toggle("btn--cart-wide", directSelectOff);
+  bagButton.classList.toggle("btn--cart-inline", directSelectOff);
   if (directSelectOff) {
-    cartPanel.appendChild(bagButton);
+    summaryMetrics.insertBefore(bagButton, clearCartButton);
   } else {
     catalog.appendChild(bagButton);
   }
