@@ -2028,92 +2028,110 @@ p {
 .point-overview {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 18px;
-  border: 1.5px solid var(--c-border-default);
+  gap: 10px;
+  width: 100%;
+  padding: 18px 20px;
+  border: 1px solid var(--c-border-default);
   border-radius: 18px;
   background: var(--c-bg-subtle);
 }
 
-.point-overview__customer {
-  font-size: 18px;
-  line-height: 1.35;
+.point-customer {
+  width: 100%;
+  font-size: 20px;
+  line-height: 1.4;
+  text-align: center;
 }
 
 .point-overview__metrics {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2px;
-  overflow: hidden;
-  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .point-overview__metric {
   display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
   min-width: 0;
-  min-height: 82px;
-  flex-direction: column;
-  justify-content: center;
-  gap: 6px;
-  padding: 14px 18px;
-  background: #ffffff;
+  min-height: 64px;
+  gap: 20px;
+  padding: 0 8px;
 }
 
 .point-overview__label {
-  font-size: 13px;
-  color: var(--c-text-secondary);
+  font-size: 18px;
+  color: var(--c-text-primary);
 }
 
 .point-overview__value {
-  font-size: 24px;
+  font-size: 22px;
   line-height: 1.1;
   white-space: nowrap;
 }
 
-.point-overview__metric--balance .point-overview__value,
+.point-overview__metric:not(.point-overview__metric--balance) .point-overview__value,
 .point-overview__unit {
   color: var(--c-brand);
 }
 
 .point-overview__unit {
-  font-size: 13px;
+  display: block;
+  width: 100%;
+  font-size: 15px;
   font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
 }
 
-.final-payment-card {
+.applied-result {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 18px 20px;
-  border-radius: 14px;
-  background: var(--c-brand-soft);
+  gap: 20px;
+  width: 100%;
 }
 
-.final-payment-card__row,
-.final-payment-card__total {
+.applied-result__card {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
+  width: 100%;
+  min-height: 60px;
+  padding: 16px 24px;
+  border-radius: 14px;
 }
 
-.final-payment-card__total {
-  min-height: 42px;
+.applied-result__card--points {
+  background: var(--c-brand-tint);
 }
 
-.final-payment-card__label {
+.applied-result__card--final {
+  min-height: 74px;
+  padding-top: 18px;
+  padding-bottom: 18px;
+  border: 1.5px solid var(--c-brand);
+  background: var(--c-bg-surface);
+}
+
+.applied-result__label {
   font-size: 17px;
+}
+
+.applied-result__label--final {
+  font-size: 19px;
   font-weight: 700;
 }
 
-.final-payment-card__deduction {
-  font-size: 19px;
+.applied-result__deduction {
+  font-size: 22px;
   color: var(--c-brand);
   white-space: nowrap;
 }
 
-.final-payment-card__value {
-  font-size: 32px;
+.applied-result__value {
+  font-size: 36px;
   line-height: 1;
   color: var(--c-brand);
   white-space: nowrap;

@@ -760,6 +760,9 @@ SCREENS["point-phone"] = function (modal, data) {
     openModal("login");
   }));
   modalIntro(modal, "보유 포인트를 사용하시겠습니까?");
+  modal.appendChild(
+    el("strong", "point-customer", formatPhone(state.member.key) + " 고객님"),
+  );
   modal.appendChild(phonePointOverview(totals));
   modal.appendChild(pointOptionsForPhone(totals));
   modal.appendChild(finalPaymentCard(totals));
@@ -783,21 +786,23 @@ SCREENS["point-phone"] = function (modal, data) {
 
 function phonePointOverview(totals) {
   const overview = el("div", "point-overview");
-  overview.appendChild(
-    el("strong", "point-overview__customer", formatPhone(state.member.key) + " 고객님"),
-  );
   const metrics = el("div", "point-overview__metrics");
   const balance = el("div", "point-overview__metric point-overview__metric--balance");
+  balance.appendChild(el("span", "point-overview__label", "보유 포인트"));
   balance.appendChild(el("strong", "point-overview__value", point(state.member.point)));
-  balance.appendChild(
-    el("span", "point-overview__unit", STORE.pointUnit + "P 단위로 사용할 수 있습니다."),
-  );
   const payment = el("div", "point-overview__metric");
   payment.appendChild(el("span", "point-overview__label", "결제금액"));
   payment.appendChild(el("strong", "point-overview__value", won(totals.beforePoint)));
   metrics.appendChild(balance);
   metrics.appendChild(payment);
   overview.appendChild(metrics);
+  overview.appendChild(
+    el(
+      "strong",
+      "point-overview__unit",
+      STORE.pointUnit + "P 단위로 사용할 수 있습니다",
+    ),
+  );
   return overview;
 }
 
@@ -835,18 +840,18 @@ function pointOptionsForPhone(totals) {
 }
 
 function finalPaymentCard(totals) {
-  const card = el("div", "final-payment-card");
-  const deduction = el("div", "final-payment-card__row");
-  deduction.appendChild(el("span", "final-payment-card__label", "포인트 사용"));
-  deduction.appendChild(el("strong", "final-payment-card__deduction", "− " + point(state.usedPoint)));
-  card.appendChild(deduction);
-  const final = el("div", "final-payment-card__total");
-  final.appendChild(el("span", "final-payment-card__label", "최종 결제금액"));
+  const result = el("div", "applied-result");
+  const deduction = el("div", "applied-result__card applied-result__card--points");
+  deduction.appendChild(el("span", "applied-result__label", "포인트 사용"));
+  deduction.appendChild(el("strong", "applied-result__deduction", "− " + point(state.usedPoint)));
+  result.appendChild(deduction);
+  const final = el("div", "applied-result__card applied-result__card--final");
+  final.appendChild(el("span", "applied-result__label applied-result__label--final", "최종 결제금액"));
   final.appendChild(
-    el("strong", "final-payment-card__value", won(totals.beforePoint - state.usedPoint)),
+    el("strong", "applied-result__value", won(totals.beforePoint - state.usedPoint)),
   );
-  card.appendChild(final);
-  return card;
+  result.appendChild(final);
+  return result;
 }
 
 /* 04-APP-D / 04-PHN-D */
