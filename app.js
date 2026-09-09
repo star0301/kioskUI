@@ -672,6 +672,7 @@ const state = {
   modal: null,
   modalData: {},
   loginPurpose: "checkout",
+  pointBackTarget: "login",
   phoneInput: "",
   pointInput: "",
   signupPhone: "",
@@ -1499,7 +1500,17 @@ function openLoginSuccessDestination() {
     openModal("point-history");
     return;
   }
+  state.pointBackTarget = "login";
   openPointScreen();
+}
+
+/* 이미 로그인한 상태에서 결제수단으로 진입했다면 상품 화면으로 돌아간다. */
+function returnFromPointScreen() {
+  if (state.pointBackTarget === "cart") {
+    closeModal();
+    return;
+  }
+  openModal("login");
 }
 
 /* ── 03-B 회원 미가입 안내 ────────────────────────────────────────────────── */
@@ -2536,6 +2547,7 @@ function resetKiosk() {
   state.usedPoint = 0;
   state.method = null;
   state.loginPurpose = "checkout";
+  state.pointBackTarget = "login";
   state.phoneInput = "";
   state.pointInput = "";
   state.signupPhone = "";
@@ -2613,10 +2625,12 @@ function bindEvents() {
         return;
       }
       if (state.member) {
+        state.pointBackTarget = "cart";
         openPointScreen();
         return;
       }
       state.loginPurpose = "checkout";
+      state.pointBackTarget = "login";
       openModal("login-prompt");
     });
   });

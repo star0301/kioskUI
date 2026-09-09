@@ -628,9 +628,7 @@ SCREENS["signup-confirm"] = function (modal) {
 };
 
 function pointHeaderExact(modal, totals, title, subtitle) {
-  modal.appendChild(backButton(function () {
-    openModal("login");
-  }));
+  modal.appendChild(backButton(returnFromPointScreen));
   modalIntro(modal, title, subtitle);
   modal.appendChild(
     infoRows([
@@ -768,9 +766,7 @@ SCREENS["point-app"] = function (modal, data) {
 SCREENS["point-phone"] = function (modal, data) {
   const totals = data.totals;
   setModal(modal, "modal--point");
-  modal.appendChild(backButton(function () {
-    openModal("login");
-  }));
+  modal.appendChild(backButton(returnFromPointScreen));
   modalIntro(modal, "보유 포인트를 사용하시겠습니까?");
   modal.appendChild(
     el("strong", "point-customer", formatPhone(state.member.key) + " 고객님"),
