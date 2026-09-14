@@ -196,8 +196,11 @@ p {
 
 .header__brand {
   display: flex;
-  align-items: flex-start;
-  justify-content: center;
+  align-items: center;
+  justify-content: flex-start;
+  justify-self: stretch;
+  align-self: stretch;
+  width: 100%;
   min-height: 72px;
 }
 
@@ -2240,11 +2243,12 @@ p {
   justify-content: space-between;
   gap: 24px;
   width: 100%;
-  min-height: 104px;
-  padding: 18px 19px;
-  border-radius: 18px;
-  background: #1f1f24;
-  color: #ffffff;
+  min-height: 88px;
+  padding: 18px 4px;
+  border-top: 2px solid var(--c-border-strong);
+  border-radius: 0;
+  background: transparent;
+  color: var(--c-text-primary);
 }
 
 .final-payment-dark__label {
@@ -2254,6 +2258,7 @@ p {
 .final-payment-dark__value {
   margin-left: auto;
   font-size: 32px;
+  color: var(--c-brand);
   text-align: right;
   white-space: nowrap;
 }

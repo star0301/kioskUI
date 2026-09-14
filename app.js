@@ -668,6 +668,7 @@ const state = {
   page: 0,
   member: null,
   usedPoint: 0,
+  pointUseMode: "none",
   method: null,
   modal: null,
   modalData: {},
@@ -1870,17 +1871,22 @@ function pointOptions(totals) {
 
   const none = el(
     "button",
-    `point-option${state.usedPoint === 0 ? " is-selected" : ""}`,
+    `point-option${state.pointUseMode === "none" ? " is-selected" : ""}`,
     "사용 안 함",
   );
   none.addEventListener("click", () => {
     state.usedPoint = 0;
+    state.pointUseMode = "none";
     state.pointPinVerified = false;
     renderSummary();
     openPointScreen();
   });
 
-  const direct = el("button", "point-option", "직접 입력");
+  const direct = el(
+    "button",
+    `point-option${state.pointUseMode === "direct" ? " is-selected" : ""}`,
+    "직접 입력",
+  );
   direct.addEventListener("click", () => {
     state.pointPinVerified = false;
     state.pointInput = "";
@@ -1889,12 +1895,13 @@ function pointOptions(totals) {
 
   const all = el(
     "button",
-    `point-option${state.usedPoint === maxUsable && maxUsable > 0 ? " is-selected" : ""}`,
+    `point-option${state.pointUseMode === "all" && maxUsable > 0 ? " is-selected" : ""}`,
   );
   all.appendChild(el("span", "point-option__label", "사용 가능 전액"));
   all.appendChild(el("strong", "point-option__value", point(maxUsable)));
   all.addEventListener("click", () => {
     state.usedPoint = maxUsable;
+    state.pointUseMode = "all";
     renderSummary();
     beginPointPinVerification("point-app");
   });
@@ -2022,6 +2029,7 @@ SCREENS["point-input"] = (modal, { maxUsable }) => {
         disabled: !valid,
         onClick: () => {
           state.usedPoint = value;
+          state.pointUseMode = "direct";
           renderSummary();
           openPointScreen();
         },
@@ -2546,6 +2554,7 @@ function resetKiosk() {
   state.cart = [];
   state.member = null;
   state.usedPoint = 0;
+  state.pointUseMode = "none";
   state.method = null;
   state.loginPurpose = "checkout";
   state.pointBackTarget = "login";

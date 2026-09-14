@@ -984,9 +984,14 @@ function pointOptionsForPhone(totals) {
     { label: "직접 입력", direct: true },
     { label: "사용 가능 전액", value: maxUsable, all: true },
   ].forEach(function (item) {
+    const selected = item.direct
+      ? state.pointUseMode === "direct"
+      : item.all
+        ? state.pointUseMode === "all"
+        : state.pointUseMode === "none";
     const button = el(
       "button",
-      "point-option" + (!item.direct && state.usedPoint === item.value ? " is-selected" : ""),
+      "point-option" + (selected ? " is-selected" : ""),
       item.all ? undefined : item.label,
     );
     button.type = "button";
@@ -1003,6 +1008,7 @@ function pointOptionsForPhone(totals) {
         return;
       }
       state.usedPoint = item.value;
+      state.pointUseMode = item.all ? "all" : "none";
       state.pointPinVerified = false;
       renderSummary();
       if (item.value > 0) {
@@ -1302,6 +1308,7 @@ SCREENS["point-input"] = function (modal, data) {
         disabled: !valid,
         onClick: function () {
           state.usedPoint = value;
+          state.pointUseMode = "direct";
           renderSummary();
           beginPointPinVerification("point-input", {
             maxUsable: maxUsable,
@@ -1386,6 +1393,7 @@ SCREENS["point-pin-error"] = function (modal) {
         variant: "primary",
         onClick: function () {
           state.usedPoint = 0;
+          state.pointUseMode = "none";
           state.pointInput = "";
           state.pointPinInput = "";
           state.pointPinAttempts = 0;
