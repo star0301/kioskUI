@@ -675,69 +675,222 @@ function sectionHeading(title, desc) {
   return head;
 }
 
+function appMemberLine(status) {
+  const member = el("div", "app-benefit-member");
+  member.appendChild(
+    el(
+      "strong",
+      "app-benefit-member__name",
+      (state.member.name || "APP 회원") + " APP 회원",
+    ),
+  );
+  member.appendChild(statusPill(status, "success"));
+  return member;
+}
+
+function automaticSavingsCard(totals) {
+  const automatic = totals.saleDiscount + totals.couponDiscount;
+  const card = el("div", "automatic-savings");
+  card.appendChild(
+    el("strong", "automatic-savings__eyebrow", "APP 로그인 자동 혜택"),
+  );
+  card.appendChild(
+    el("strong", "automatic-savings__amount", "총 " + won(automatic) + " 할인"),
+  );
+  card.appendChild(
+    el(
+      "strong",
+      "automatic-savings__message",
+      "로그인 전 결제금액보다 " + won(totals.couponDiscount) + " 더 할인됐습니다",
+    ),
+  );
+  card.appendChild(
+    el(
+      "span",
+      "automatic-savings__rule",
+      "상품 행사와 적용 가능한 쿠폰을 시스템이 전부 찾아 자동 반영",
+    ),
+  );
+  return card;
+}
+
+function appPointChoice(totals, disabled) {
+  const card = el("div", "app-point-choice");
+  const header = el("div", "app-point-choice__header");
+  header.appendChild(el("strong", "app-point-choice__title", "포인트 사용"));
+  header.appendChild(
+    el(
+      "strong",
+      "app-point-choice__balance" + (disabled ? " is-disabled" : ""),
+      point(state.member.point),
+    ),
+  );
+  card.appendChild(header);
+
+  if (disabled) {
+    const options = el("div", "point-options app-point-choice__options");
+    ["사용 안 함", "직접 입력", "사용 가능 전액 ✓"].forEach(function (label) {
+      const option = el("button", "point-option", label);
+      option.type = "button";
+      option.disabled = true;
+      options.appendChild(option);
+    });
+    card.appendChild(options);
+  } else {
+    card.appendChild(pointOptions(totals));
+  }
+
+  card.appendChild(
+    el(
+      "strong",
+      "app-point-choice__rule" + (disabled ? " is-disabled" : ""),
+      "최소 " +
+        point(STORE.pointMin) +
+        "부터 · " +
+        STORE.pointUnit +
+        "P 단위로 사용할 수 있어요",
+    ),
+  );
+  return card;
+}
+
+function discountSummaryRow(label, value, options) {
+  const row = el("div", "discount-summary__row");
+  row.appendChild(el("span", "discount-summary__label", label));
+  row.appendChild(
+    el(
+      "strong",
+      "discount-summary__value" + (options && options.brand ? " is-brand" : ""),
+      value,
+    ),
+  );
+  return row;
+}
+
+function automaticDiscountSummary(totals, options) {
+  const settings = Object.assign(
+    { disabled: false, showDetails: true },
+    options || {},
+  );
+  const summary = el("div", "automatic-discount-summary");
+  summary.appendChild(
+    discountSummaryRow("원래 상품 금액", won(totals.listTotal)),
+  );
+
+  if (totals.saleDiscount > 0) {
+    summary.appendChild(
+      discountSummaryRow(
+        "상품 행사 할인 금액",
+        "−" + won(totals.saleDiscount),
+        { brand: true },
+      ),
+    );
+  }
+  if (totals.couponDiscount > 0) {
+    summary.appendChild(
+      discountSummaryRow(
+        "사용 가능 쿠폰 할인 합계",
+        "−" + won(totals.couponDiscount),
+        { brand: true },
+      ),
+    );
+  }
+
+  const usedPoint = settings.disabled ? 0 : state.usedPoint;
+  summary.appendChild(
+    discountSummaryRow(
+      "사용된 포인트",
+      Number(usedPoint).toLocaleString("ko-KR") + "원(P)",
+      { brand: usedPoint > 0 },
+    ),
+  );
+  summary.appendChild(el("div", "discount-summary__divider"));
+  summary.appendChild(
+    discountSummaryRow(
+      usedPoint > 0 ? "포인트 적용 후 결제금액" : "할인 적용 후 결제금액",
+      won(totals.beforePoint - usedPoint),
+    ),
+  );
+
+  if (settings.showDetails && totals.saleDiscount + totals.couponDiscount > 0) {
+    const detail = el(
+      "button",
+      "btn btn--outline discount-summary__detail",
+      "자동 적용 할인 내역 보기",
+    );
+    detail.type = "button";
+    detail.addEventListener("click", function () {
+      openModal("discount-details", { totals: totals });
+    });
+    summary.appendChild(detail);
+  }
+  return summary;
+}
+
+function finalPaymentDark(amount) {
+  const card = el("div", "final-payment-dark");
+  card.appendChild(el("strong", "final-payment-dark__label", "최종 결제금액"));
+  card.appendChild(el("strong", "final-payment-dark__value", won(amount)));
+  return card;
+}
+
+function automaticDiscountDetailSummary(discountCount) {
+  const card = el("div", "discount-detail-summary");
+  card.appendChild(
+    el(
+      "strong",
+      "discount-detail-summary__eyebrow",
+      "적용 가능한 혜택을 빠짐없이 확인했습니다",
+    ),
+  );
+  card.appendChild(
+    el(
+      "strong",
+      "discount-detail-summary__title",
+      "할인 " + discountCount + "건 모두 자동 반영",
+    ),
+  );
+  card.appendChild(
+    el(
+      "span",
+      "discount-detail-summary__desc",
+      "고객이 쿠폰을 고르지 않아도 가장 큰 할인 결과를 적용합니다.",
+    ),
+  );
+  return card;
+}
+
 /* 04-APP */
 SCREENS["point-app"] = function (modal, data) {
   const totals = data.totals;
-  setModal(modal, "modal--point");
-  pointHeaderExact(
+  const automatic = totals.saleDiscount + totals.couponDiscount;
+  const hasAutomaticDiscount = automatic > 0;
+  const payable = totals.beforePoint - state.usedPoint;
+
+  setModal(modal, "modal--point modal--point-app");
+  modal.appendChild(backButton(returnFromPointScreen));
+  modalIntro(
     modal,
-    totals,
-    "할인은 이미 모두 적용됐어요",
-    "포인트 사용 여부만 선택해주세요",
+    hasAutomaticDiscount
+      ? "할인 쿠폰을 모두 적용했어요"
+      : "적용 가능한 쿠폰이 없네요. 포인트 사용하실래요?",
   );
-  const automatic =
-    totals.saleDiscount + totals.couponDiscount;
-  modal.appendChild(memberStrip("app", "자동 할인 적용 완료"));
+
+  if (hasAutomaticDiscount) {
+    modal.appendChild(appMemberLine("자동 할인 적용 완료"));
+    modal.appendChild(automaticSavingsCard(totals));
+    modal.appendChild(
+      el("h2", "modal__title app-point-question", "포인트도 사용하실래요?"),
+    );
+  }
+
+  modal.appendChild(appPointChoice(totals, false));
   modal.appendChild(
-    calloutCard(
-      "brand",
-      "APP 로그인 자동 혜택 · 총 " + won(automatic) + " 할인",
-      "상품 행사와 적용 가능한 쿠폰을 시스템이 전부 찾아 자동 반영했습니다.",
-    ),
+    automaticDiscountSummary(totals, {
+      showDetails: hasAutomaticDiscount,
+    }),
   );
-  modal.appendChild(
-    infoRows([
-      {
-        label: "상품 행사 자동 반영",
-        value: "−" + won(totals.saleDiscount),
-        className: "row__value--brand",
-      },
-      {
-        label: "사용 가능 쿠폰 " + totals.coupons.length + "장 모두 적용",
-        value: "−" + won(totals.couponDiscount),
-        className: "row__value--brand",
-      },
-      { label: "APP 자동 할인 후 금액", value: won(totals.beforePoint) },
-    ]),
-  );
-  const detail = el("button", "btn btn--outline", "자동 적용 할인 내역 보기");
-  detail.addEventListener("click", function () {
-    openModal("discount-details", { totals: totals });
-  });
-  modal.appendChild(detail);
-  modal.appendChild(
-    sectionHeading(
-      "포인트 사용",
-      "보유 " + point(state.member.point) + " · " + STORE.pointUnit + "P 단위",
-    ),
-  );
-  modal.appendChild(pointOptions(totals));
-  modal.appendChild(
-    infoRows([
-      {
-        label:
-          "포인트 사용 · 잔여 " +
-          point(Math.max(0, state.member.point - state.usedPoint)),
-        value: "−" + point(state.usedPoint),
-        className: "row__value--brand",
-      },
-      {
-        label: "최종 결제금액",
-        value: won(totals.beforePoint - state.usedPoint),
-        className: "row__value--brand",
-      },
-    ]),
-  );
+  modal.appendChild(finalPaymentDark(payable));
   modal.appendChild(
     actionRow([
       {
@@ -881,6 +1034,32 @@ function finalPaymentCard(totals) {
 /* 04-APP-D / 04-PHN-D */
 SCREENS["point-disabled"] = function (modal, data) {
   const totals = data.totals;
+  if (state.member.type === "app") {
+    const automatic = totals.saleDiscount + totals.couponDiscount;
+    setModal(modal, "modal--point modal--point-app modal--point-app-disabled");
+    modal.appendChild(backButton(returnFromPointScreen));
+    modalIntro(modal, "할인 쿠폰을 모두 적용했어요");
+    modal.appendChild(appMemberLine("자동 할인 적용 완료"));
+    if (automatic > 0) {
+      modal.appendChild(automaticSavingsCard(totals));
+    }
+    modal.appendChild(
+      el("h2", "modal__title app-point-question", "포인트도 사용하실래요?"),
+    );
+    modal.appendChild(appPointChoice(totals, true));
+    modal.appendChild(
+      automaticDiscountSummary(totals, {
+        disabled: true,
+        showDetails: automatic > 0,
+      }),
+    );
+    modal.appendChild(finalPaymentDark(totals.beforePoint));
+    modal.appendChild(
+      actionRow([{ label: "결제 계속", variant: "primary", onClick: startPayment }]),
+    );
+    return;
+  }
+
   setModal(modal, "modal--point");
   pointHeaderExact(
     modal,
@@ -936,44 +1115,67 @@ SCREENS["point-disabled"] = function (modal, data) {
 /* 04-DTL 자동 할인 상세 */
 SCREENS["discount-details"] = function (modal, data) {
   const totals = data.totals || calcTotals();
+  const saleItemCount = state.cart.reduce(function (sum, line) {
+    const product = findProduct(line.id);
+    return sum +
+      (product && product.price > unitPrice(product) ? line.qty : 0);
+  }, 0);
+  const automaticDiscountCount = saleItemCount + totals.coupons.length;
   setModal(modal, "modal--discount-detail");
   modal.appendChild(backButton(openPointScreen));
-  modalIntro(
-    modal,
-    "자동 적용된 할인 내역",
-    "적용 가능한 혜택을 빠짐없이 확인했습니다",
-  );
+  modalIntro(modal, "자동 적용된 할인 내역");
   modal.appendChild(
-    calloutCard(
-      "brand",
-      "할인 " + (totals.coupons.length + 1) + "건 모두 자동 반영",
-      "고객이 쿠폰을 고르지 않아도 가장 큰 할인 결과를 적용합니다.",
-    ),
+    automaticDiscountDetailSummary(automaticDiscountCount),
   );
-  const rows = [
-    {
-      label: "상품 행사 자동 반영",
-      value: "−" + won(totals.saleDiscount),
-      className: "row__value--brand",
-    },
-  ];
+  const list = el("div", "discount-detail-list");
+  if (totals.saleDiscount > 0) {
+    list.appendChild(
+      discountDetailItem(
+        "자동 적용",
+        "상품 행사 " + saleItemCount + "건",
+        "상품 스캔 시 행사 판매가 자동 반영",
+        "−" + won(totals.saleDiscount),
+      ),
+    );
+  }
   totals.coupons.forEach(function (coupon) {
-    rows.push({
-      label: coupon.name,
-      value: "−" + won(coupon.applied),
-      className: "row__value--brand",
-    });
+    list.appendChild(
+      discountDetailItem(
+        "자동 적용",
+        coupon.name,
+        coupon.type === "item"
+          ? "대상 상품에 사용 가능한 쿠폰 전액 반영"
+          : "결제 조건을 충족한 쿠폰 전액 반영",
+        "−" + won(coupon.applied),
+      ),
+    );
   });
-  modal.appendChild(infoRows(rows, "discount-list"));
+  if (state.usedPoint > 0) {
+    list.appendChild(
+      discountDetailItem(
+        "포인트 적용",
+        "사용 포인트",
+        "회원 보유 포인트를 결제금액에 적용",
+        Number(state.usedPoint).toLocaleString("ko-KR") + "원(P)",
+        true,
+      ),
+    );
+  }
+  modal.appendChild(list);
+  const totalDiscount =
+    totals.saleDiscount + totals.couponDiscount + state.usedPoint;
   modal.appendChild(
     infoRows([
       { label: "상품 정상가", value: won(totals.listTotal) },
       {
-        label: "자동 할인 합계",
-        value: "−" + won(totals.saleDiscount + totals.couponDiscount),
+        label: "할인 합계",
+        value: "−" + won(totalDiscount),
         className: "row__value--brand",
       },
-      { label: "포인트 적용 전 금액", value: won(totals.beforePoint) },
+      {
+        label: "최종 결제금액",
+        value: won(totals.beforePoint - state.usedPoint),
+      },
     ]),
   );
   modal.appendChild(
@@ -987,6 +1189,29 @@ SCREENS["discount-details"] = function (modal, data) {
     actionRow([{ label: "확인", variant: "primary", onClick: openPointScreen }]),
   );
 };
+
+function discountDetailItem(badgeText, title, description, value, isPoint) {
+  const item = el("div", "discount-detail-item");
+  item.appendChild(
+    el(
+      "span",
+      "discount-detail-item__badge" + (isPoint ? " is-point" : ""),
+      badgeText,
+    ),
+  );
+  const copy = el("div", "discount-detail-item__copy");
+  copy.appendChild(el("strong", "discount-detail-item__title", title));
+  copy.appendChild(el("span", "discount-detail-item__desc", description));
+  item.appendChild(copy);
+  item.appendChild(
+    el(
+      "strong",
+      "discount-detail-item__value" + (isPoint ? " is-point" : ""),
+      value,
+    ),
+  );
+  return item;
+}
 
 /* 04-INP 포인트 직접 입력 */
 SCREENS["point-input"] = function (modal, data) {

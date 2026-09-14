@@ -196,23 +196,18 @@ p {
 
 .header__brand {
   display: flex;
-  flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  gap: var(--sp-2);
+  min-height: 72px;
 }
 
-.header__brand-name {
-  font-size: var(--fs-26);
-  font-weight: 700;
-  line-height: 1.1;
-  color: var(--c-brand);
-}
-
-.header__brand-sub {
-  font-size: var(--fs-15);
-  font-weight: 500;
-  color: var(--c-text-secondary);
+.header__brand-logo {
+  display: block;
+  width: 148px;
+  height: auto;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .header__store {
@@ -2059,6 +2054,341 @@ p {
 .member-strip > .status-pill {
   flex: 0 0 auto;
   min-height: 36px;
+}
+
+/* 04-APP : APP 회원 자동 할인·포인트 선택 */
+.modal--point-app {
+  gap: 16px;
+  width: 759px;
+  padding: 36px 46px;
+}
+
+.modal--point-app > .btn--back {
+  margin-bottom: 44px;
+}
+
+.app-benefit-member {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 53px;
+  padding: 12px 0;
+}
+
+.app-benefit-member__name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--c-text-primary);
+}
+
+.app-benefit-member .status-pill {
+  min-height: 29px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.automatic-savings {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 179px;
+  padding: 24px 22px;
+  border-radius: 20px;
+  background: var(--c-brand-soft);
+  text-align: center;
+}
+
+.automatic-savings__eyebrow {
+  font-size: 14px;
+  color: var(--c-brand);
+}
+
+.automatic-savings__amount {
+  font-size: 34px;
+  line-height: 1.2;
+  color: var(--c-brand);
+}
+
+.automatic-savings__message {
+  font-size: 15px;
+  color: var(--c-text-primary);
+}
+
+.automatic-savings__rule {
+  font-size: 13px;
+  color: var(--c-text-secondary);
+}
+
+.app-point-question {
+  margin-top: 16px;
+}
+
+.app-point-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 18px 17px;
+  border: 1.5px solid var(--c-border-default);
+  border-radius: 16px;
+  background: var(--c-bg-surface);
+}
+
+.app-point-choice__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 24px;
+}
+
+.app-point-choice__title {
+  font-size: 17px;
+}
+
+.app-point-choice__balance {
+  margin-left: auto;
+  font-size: 18px;
+  color: var(--c-brand);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.app-point-choice__balance.is-disabled {
+  color: var(--c-text-primary);
+}
+
+.app-point-choice .point-options {
+  gap: 8px;
+}
+
+.app-point-choice .point-option {
+  min-height: 58px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.app-point-choice__rule {
+  min-height: 22px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--c-brand);
+}
+
+.app-point-choice__rule.is-disabled {
+  color: var(--c-warning);
+}
+
+.automatic-discount-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  padding: 18px 17px;
+  border-radius: 16px;
+  background: var(--c-bg-subtle);
+}
+
+.discount-summary__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 132px;
+  align-items: center;
+  gap: 18px;
+  min-height: 22px;
+}
+
+.discount-summary__label {
+  min-width: 0;
+  font-size: 14px;
+  color: var(--c-text-secondary);
+}
+
+.discount-summary__value {
+  width: 132px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--c-text-primary);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.discount-summary__value.is-brand {
+  color: var(--c-brand);
+}
+
+.discount-summary__divider {
+  width: 100%;
+  height: 1px;
+  background: var(--c-border-default);
+}
+
+.discount-summary__detail {
+  width: 100%;
+  min-height: 54px;
+  margin-top: 0;
+  font-size: 15px;
+}
+
+.final-payment-dark {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  width: 100%;
+  min-height: 104px;
+  padding: 18px 19px;
+  border-radius: 18px;
+  background: #1f1f24;
+  color: #ffffff;
+}
+
+.final-payment-dark__label {
+  font-size: 24px;
+}
+
+.final-payment-dark__value {
+  margin-left: auto;
+  font-size: 32px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* 04-DTL : 자동 할인 상세 */
+.discount-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.modal--discount-detail > .btn--back {
+  margin-bottom: 28px;
+}
+
+.discount-detail-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 130px;
+  padding: 22px 20px;
+  border-radius: 18px;
+  background: var(--c-brand-soft);
+  text-align: center;
+}
+
+.discount-detail-summary__eyebrow {
+  font-size: 14px;
+  color: var(--c-brand);
+}
+
+.discount-detail-summary__title {
+  font-size: 25px;
+  line-height: 1.25;
+  color: var(--c-text-primary);
+}
+
+.discount-detail-summary__desc {
+  font-size: 14px;
+  color: var(--c-text-secondary);
+}
+
+.discount-detail-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 81px;
+  padding: 18px 17px;
+  border: 1.25px solid var(--c-border-default);
+  border-radius: 14px;
+  background: var(--c-bg-surface);
+}
+
+.discount-detail-item__badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+  min-height: 28px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: var(--c-success-soft);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--c-success);
+  white-space: nowrap;
+}
+
+.discount-detail-item__badge.is-point {
+  min-width: 82px;
+  background: var(--c-brand-soft);
+  color: var(--c-brand);
+}
+
+.discount-detail-item__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.discount-detail-item__title {
+  overflow: hidden;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.discount-detail-item__desc {
+  overflow: hidden;
+  font-size: 13px;
+  color: var(--c-text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.discount-detail-item__value {
+  min-width: 96px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--c-brand);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.discount-detail-item__value.is-point {
+  min-width: 106px;
+}
+
+.modal--discount-detail > .modal__rows {
+  gap: 8px;
+  padding: 18px 17px;
+  border-radius: 14px;
+}
+
+.modal--discount-detail > .modal__rows .row {
+  min-height: 23px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.modal--discount-detail > .modal__rows .row__label {
+  font-size: 14px;
+  color: var(--c-text-secondary);
+}
+
+.modal--discount-detail > .modal__rows .row__value {
+  font-size: 16px;
 }
 
 .modal-section-head {
