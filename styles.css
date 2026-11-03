@@ -415,9 +415,12 @@ p {
   -webkit-line-clamp: 2;
   line-clamp: 2;
   overflow: hidden;
+  /* [고정] 한 줄짜리 상품명도 2줄 자리를 차지한다 (15px x 행간21 x 2줄) */
+  flex: 0 0 42px;
+  height: 42px;
   font-size: var(--fs-15);
   font-weight: 500;
-  line-height: 1.35;
+  line-height: 21px;
   word-break: keep-all;
 }
 
@@ -598,7 +601,8 @@ p {
   display: flex;
   flex-direction: column;
   flex: 1;
-  gap: var(--sp-12);
+  /* [정수화] 12 -> 11 : 44 + 11 + 1187 + 11 + 44 = 1297 (오차 0) */
+  gap: 11px;
   min-height: 0;
   padding: 0 var(--sp-16);
   overflow: hidden;
@@ -676,7 +680,8 @@ p {
 .catalog__grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: repeat(5, minmax(0, 1fr));
+  /* [고정] 1fr 로 늘리지 않고 231 고정 — 5 x 231 + 4 x 8 = 1187 */
+  grid-template-rows: repeat(5, 231px);
   grid-auto-flow: column;
   flex: 1;
   gap: var(--sp-8);
@@ -698,6 +703,8 @@ p {
   flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
+  /* [고정] 카드 231 = 테두리1 + 패딩8 + 이름42 + 4 + 이미지123 + 4 + 가격40 + 패딩8 + 테두리1 */
+  height: 231px;
   gap: var(--sp-4);
   min-width: 0;
   min-height: 0;
@@ -716,10 +723,11 @@ p {
   align-items: center;
   justify-content: center;
   align-self: center;
-  flex: 1 1 0;
-  width: auto;
+  /* [고정] 남는 공간을 흡수하지 않는다 — 상품명 줄수와 무관하게 123 정사각 */
+  flex: 0 0 123px;
+  width: 123px;
+  height: 123px;
   max-width: 100%;
-  min-height: 0;
   aspect-ratio: 1 / 1;
   overflow: hidden;
 }
@@ -748,11 +756,17 @@ p {
 .product__price-stack {
   display: flex;
   flex-direction: column;
+  /* [고정] 원가 줄(16) + 2 + 판매가 줄(22) = 40 을 항상 예약.
+     행사가 없으면 위쪽 원가 자리가 빈 줄로 남는다 (의도된 동작) */
+  flex: 0 0 40px;
+  height: 40px;
+  justify-content: flex-end;
   gap: 2px;
 }
 
 .product__list-price {
-  line-height: 1.2;
+  min-height: 16px;
+  line-height: 16px;
   font-size: var(--fs-13);
   color: var(--c-text-muted);
   text-decoration: line-through;
@@ -763,13 +777,14 @@ p {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  height: 22px;
   gap: var(--sp-4);
 }
 
 .product__price {
   font-size: var(--fs-19);
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 22px;
   color: var(--c-brand);
   white-space: nowrap;
 }
@@ -893,21 +908,26 @@ p {
   color: #ffffff;
 }
 
-.pay-chip--kakao {
-  background: #fee500;
-  color: #3c1e1e;
-}
-
+/* 브랜드 고유색 — 04 기획의 Brand Mark 기준 */
 .pay-chip--naver {
   background: #03c75a;
 }
 
-.pay-chip--payco {
-  background: #e3242b;
+.pay-chip--kakao {
+  background: #fee500;
+  color: #1f1c14;
+}
+
+.pay-chip--alipay {
+  background: #1677ff;
+}
+
+.pay-chip--wechat {
+  background: #07c160;
 }
 
 .pay-chip--zero {
-  background: #2c5cf0;
+  background: #1fb7b2;
 }
 
 .method__name {
@@ -1606,12 +1626,47 @@ p {
   gap: 18px;
 }
 
+/* [미사용] 04 기획의 결제수단 배지(.payment-badge)로 대체됨 */
 .modal__eyebrow {
   font-size: 17px;
   font-weight: 700;
   line-height: 1.4;
   color: var(--c-brand);
   text-align: center;
+}
+
+/* 결제수단 배지 — 04 기획 Payment Method Badge 155 x 48 */
+.payment-badge {
+  display: inline-flex;
+  align-self: center;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-8);
+  box-sizing: border-box;
+  height: 48px;
+  padding: 10px 15px;
+  border-radius: var(--r-pill);
+  background: var(--c-brand-tint);
+  color: var(--c-brand);
+  white-space: nowrap;
+}
+
+.payment-badge__glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 28px;
+}
+
+.payment-badge__icon {
+  display: block;
+}
+
+.payment-badge__label {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .modal__title {

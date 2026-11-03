@@ -30,9 +30,33 @@ function setModal(modal, variants) {
     });
 }
 
-function modalIntro(modal, title, desc, eyebrow) {
-  if (eyebrow) {
-    modal.appendChild(el("p", "modal__eyebrow", eyebrow));
+/* 04 기획 Payment Method Badge 155 x 48 — 카드 글리프 24 x 28 */
+function cardGlyph() {
+  return (
+    '<svg class="payment-badge__icon" viewBox="0 0 24 28" width="24" height="28" aria-hidden="true">' +
+    '<rect x="1.2" y="5" width="21.6" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2.4"/>' +
+    '<rect x="2.4" y="9" width="19.2" height="3.6" fill="currentColor"/>' +
+    '<rect x="5" y="15.6" width="6.4" height="2.4" rx="1.2" fill="currentColor"/>' +
+    "</svg>"
+  );
+}
+
+/* spec 은 문자열이거나 { label, icon } */
+function paymentBadge(spec) {
+  const cfg = typeof spec === "string" ? { label: spec, icon: false } : spec;
+  const badge = el("div", "payment-badge");
+  if (cfg.icon) {
+    const glyph = el("span", "payment-badge__glyph");
+    glyph.innerHTML = cardGlyph();
+    badge.appendChild(glyph);
+  }
+  badge.appendChild(el("span", "payment-badge__label", cfg.label));
+  return badge;
+}
+
+function modalIntro(modal, title, desc, badge) {
+  if (badge) {
+    modal.appendChild(paymentBadge(badge));
   }
   modal.appendChild(el("h2", "modal__title", title));
   if (desc) {
@@ -1459,7 +1483,16 @@ SCREENS["point-history"] = function (modal) {
 
 function paymentModal(modal, type, title, desc, status, cancelLabel, cancel) {
   setModal(modal, "modal--payment");
-  modalIntro(modal, title, desc, type === "card" ? "신용카드 결제" : type === "easy" ? "간편결제 · 바코드" : "현금결제");
+  modalIntro(
+    modal,
+    title,
+    desc,
+    type === "card"
+      ? { label: "신용카드 결제", icon: true }
+      : type === "easy"
+        ? "간편결제 · 바코드"
+        : "현금결제",
+  );
   modal.appendChild(el("div", "modal__device", paymentSvg(type)));
   modal.appendChild(
     infoRows([
