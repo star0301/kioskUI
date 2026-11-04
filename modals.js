@@ -454,6 +454,9 @@ SCREENS["not-member"] = function (modal, data) {
       copy.appendChild(el("strong", "signup-card__title", labels[0]));
       copy.appendChild(el("span", "signup-card__desc", labels[1]));
       card.appendChild(copy);
+      card.addEventListener("click", function () {
+        showToast("시연에서는 앱 설치를 생략합니다");
+      });
       qrRow.appendChild(card);
     });
     modal.appendChild(qrRow);
@@ -476,10 +479,20 @@ SCREENS["not-member"] = function (modal, data) {
       },
     });
   }
+  const pointLookupEntry = state.loginPurpose === "history";
   buttons.push({
     label: "회원 혜택 없이 결제",
     variant: "ghost",
-    onClick: startPayment,
+    disabled: pointLookupEntry && state.cart.length === 0,
+    onClick: function () {
+      if (pointLookupEntry) {
+        state.loginPurpose = "checkout";
+        state.phoneInput = "";
+        closeModal();
+        return;
+      }
+      startPayment();
+    },
   });
   modal.appendChild(actionRow(buttons));
 };
@@ -488,9 +501,7 @@ SCREENS["not-member"] = function (modal, data) {
 SCREENS["signup-phone"] = function (modal, data) {
   setModal(modal, "modal--keypad");
   modal.appendChild(backButton(function () {
-    openModal(data.entryPath === "from-lookup" ? "not-member" : "login", {
-      phone: "010" + state.signupPhone,
-    });
+    openModal("login");
   }));
   modalIntro(
     modal,
@@ -565,7 +576,7 @@ SCREENS["signup-duplicate"] = function (modal, data) {
 SCREENS["signup-pin"] = function (modal) {
   setModal(modal, "modal--keypad");
   modal.appendChild(backButton(function () {
-    openModal("signup-phone", { entryPath: "from-lookup" });
+    openModal("signup-phone", { entryPath: "direct" });
   }));
   modalIntro(
     modal,
@@ -1068,13 +1079,24 @@ SCREENS["point-disabled"] = function (modal, data) {
     const automatic = totals.saleDiscount + totals.couponDiscount;
     setModal(modal, "modal--point modal--point-app modal--point-app-disabled");
     modal.appendChild(backButton(returnFromPointScreen));
-    modalIntro(modal, "할인 쿠폰을 모두 적용했어요");
-    modal.appendChild(appMemberLine("자동 할인 적용 완료"));
+    modalIntro(
+      modal,
+      automatic > 0
+        ? "할인 쿠폰을 모두 적용했어요"
+        : "적용 가능한 자동 할인이 없어요",
+    );
+    modal.appendChild(
+      appMemberLine(automatic > 0 ? "자동 할인 적용 완료" : "적용 가능한 자동 할인 없음"),
+    );
     if (automatic > 0) {
       modal.appendChild(automaticSavingsCard(totals));
     }
     modal.appendChild(
-      el("h2", "modal__title app-point-question", "포인트도 사용하실래요?"),
+      el(
+        "h2",
+        "modal__title app-point-question",
+        "포인트 사용 조건을 충족하지 못했어요",
+      ),
     );
     modal.appendChild(appPointChoice(totals, true));
     modal.appendChild(
@@ -1523,7 +1545,7 @@ SCREENS["pay-device"] = function (modal, data) {
     type === "card" ? "결제 취소" : "다른 결제수단 선택",
     closeModal,
   );
-  setTimeout(function () {
+  scheduleModalTransition(function () {
     if (state.modal === "pay-device") {
       openModal("van-waiting", { method: type });
     }
@@ -1569,7 +1591,7 @@ SCREENS["pay-cash"] = function (modal) {
       },
     ]),
   );
-  setTimeout(function () {
+  scheduleModalTransition(function () {
     if (state.modal === "pay-cash") {
       completePayment();
     }
@@ -1602,15 +1624,18 @@ SCREENS["van-waiting"] = function (modal, data) {
         label: "직원 호출",
         variant: "ghost",
         onClick: function () {
-          openModal("store-help");
+          openModal("store-help", { locked: true, reason: "operator-help" });
         },
       },
     ]),
   );
-  setTimeout(function () {
+  scheduleModalTransition(function () {
     if (state.modal !== "van-waiting") return;
-    if (data.method === "easy" && state.vanRetry === 0) {
-      state.vanRetry += 1;
+    if (data.method === "easy") {
+      if (state.vanRetry >= 3) {
+        openModal("store-help", { locked: true, reason: "retry-limit" });
+        return;
+      }
       openModal("van-declined");
       return;
     }
@@ -1632,12 +1657,13 @@ SCREENS["van-declined"] = function (modal) {
         className: "row__value--brand",
       },
     ],
-    note: "재시도 " + state.vanRetry + " / 3 · 3회 초과 시 직원 호출로 전환됩니다",
+    note: "재시도 " + state.vanRetry + " / 3 · 3회 초과 시 직원 확인이 필요합니다",
     actions: actionRow([
       {
         label: "다시 시도",
         variant: "primary",
         onClick: function () {
+          state.vanRetry += 1;
           openModal("van-waiting", { method: state.method || "card" });
         },
       },
@@ -1650,7 +1676,7 @@ SCREENS["van-declined"] = function (modal) {
         label: "직원 호출",
         variant: "ghost",
         onClick: function () {
-          openModal("store-help");
+          openModal("store-help", { locked: true, reason: "operator-help" });
         },
       },
     ], true),
@@ -1680,11 +1706,16 @@ SCREENS["cash-return"] = function (modal, data) {
 };
 
 /* E-HELP-01 */
-SCREENS["store-help"] = function (modal) {
+SCREENS["store-help"] = function (modal, data) {
+  const retryLimit = data && data.reason === "retry-limit";
   designAlert(modal, {
     icon: iconWarning(),
-    title: "결제가 완료되지 않았습니다",
-    desc: "카드는 정상이며 결제 금액이 빠져나가지 않았습니다",
+    title: retryLimit
+      ? "결제가 반복해서 승인되지 않았습니다"
+      : "결제 상태를 확인해야 합니다",
+    desc: retryLimit
+      ? "추가 결제를 진행하기 전에 매장 직원의 확인을 받아주세요"
+      : "승인 처리 상태가 확정되지 않았습니다. 추가 결제를 시도하지 말고 매장 직원의 확인을 받아주세요",
     rows: [
       {
         label: "키오스크 번호",
@@ -1697,9 +1728,15 @@ SCREENS["store-help"] = function (modal) {
         className: "row__value--big",
       },
     ],
-    note: "“" + STORE.kioskNo + "번 키오스크에서 결제가 안 됐어요” 라고 말씀해 주세요",
+    note: retryLimit
+      ? "“" + STORE.kioskNo + "번 키오스크에서 결제가 계속 승인되지 않아요” 라고 말씀해 주세요"
+      : "“" + STORE.kioskNo + "번 키오스크의 결제 상태를 확인해주세요” 라고 말씀해 주세요",
     actions: actionRow([
-      { label: "확인", variant: "primary", onClick: closeModal },
+      {
+        label: "직원 확인이 필요합니다",
+        variant: "primary",
+        disabled: true,
+      },
     ]),
   });
 };
@@ -1848,25 +1885,26 @@ SCREENS["cancel-checkout"] = function (modal) {
 };
 
 /* E-TMO-01 */
-SCREENS["timeout"] = function (modal) {
+SCREENS["timeout"] = function (modal, data) {
+  const warningSeconds = Number(data.seconds || 10);
   designAlert(modal, {
     icon: iconWarning(),
-    title: "10초 후 처음 화면으로 돌아갑니다",
+    title: warningSeconds + "초 후 처음 화면으로 돌아갑니다",
     desc:
       "계속 이용하시려면 화면을 눌러 주세요\n" +
       "돌아가면 담은 상품과 로그인이 모두 초기화됩니다",
     rows: [
       {
         label: "남은 시간",
-        value: "10초",
+        value: warningSeconds + "초",
         className: "row__value--big row__value--brand",
       },
     ],
     actions: actionRow([
-      { label: "계속 이용하기", variant: "primary", onClick: closeModal },
+      { label: "계속 이용하기", variant: "primary", onClick: continueAfterTimeout },
     ]),
   });
-  let left = 10;
+  let left = warningSeconds;
   const valueNode = modal.querySelector(".row__value");
   clearInterval(state.countdownTimer);
   state.countdownTimer = setInterval(function () {
