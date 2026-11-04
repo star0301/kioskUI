@@ -19,7 +19,6 @@ const STORAGE_KEY = "tomato-kiosk-options";
 
 /* 실제 매장 배포 시의 기본값 */
 const OPERATION_DEFAULTS = {
-  selfCheckout: true,
   useMemberLogin: true,
   useDirectSelect: true,
   blockSignup: false,
@@ -32,7 +31,6 @@ const OPERATION_DEFAULTS = {
 
 /* 시연용 기본값 : 봉투와 현금결제를 켜 두어 기능을 모두 보여준다. */
 const DEMO_DEFAULTS = {
-  selfCheckout: true,
   useMemberLogin: true,
   useDirectSelect: true,
   blockSignup: false,
@@ -54,12 +52,6 @@ const OPTION_META = [
     key: "useDirectSelect",
     name: "상품직접선택 사용",
     desc: "끄면 우측 상품 직접 선택 영역을 숨기고 상품 담기 영역이 가로 전체를 채웁니다. (운영 기본값 ON)",
-    type: "toggle",
-  },
-  {
-    key: "selfCheckout",
-    name: "셀프계산대 사용",
-    desc: "POS 소형 모니터에 셀프 전환 메뉴를 노출합니다. 꺼지면 키오스크 모드로 진입할 수 없습니다. (운영 기본값 ON)",
     type: "toggle",
   },
   {
@@ -684,9 +676,12 @@ const state = {
   pointPinReturnScreen: "point-phone",
   pointPinReturnData: {},
   vanRetry: 0,
+  timeoutReturnScreen: null,
+  timeoutReturnData: {},
   idleTimer: null,
   warnTimer: null,
   countdownTimer: null,
+  modalTransitionTimer: null,
 };
 
 /* ==========================================================================
@@ -1172,6 +1167,8 @@ function renderMember() {
    ========================================================================== */
 
 function openModal(name, data = {}) {
+  clearTimeout(state.modalTransitionTimer);
+  state.modalTransitionTimer = null;
   state.modal = name;
   state.modalData = data;
   const overlay = $("#overlay");
@@ -1191,12 +1188,22 @@ function openModal(name, data = {}) {
 }
 
 function closeModal() {
+  clearTimeout(state.modalTransitionTimer);
+  state.modalTransitionTimer = null;
   state.modal = null;
   state.modalData = {};
   $("#overlay").hidden = true;
   $("#modal").innerHTML = "";
   focusScanner();
   resetIdleTimer();
+}
+
+function scheduleModalTransition(callback, delay) {
+  clearTimeout(state.modalTransitionTimer);
+  state.modalTransitionTimer = setTimeout(() => {
+    state.modalTransitionTimer = null;
+    callback();
+  }, delay);
 }
 
 function backButton(onClick) {
@@ -1705,7 +1712,11 @@ SCREENS["signup-confirm"] = (modal) => {
 /* ── 04-APP / 04-PHN / 04-PHN-D ───────────────────────────────────────────── */
 function openPointScreen() {
   const totals = calcTotals();
-  const usable = state.member.point >= STORE.pointMin;
+  const maxUsable = Math.min(
+    Math.floor(state.member.point / STORE.pointUnit) * STORE.pointUnit,
+    Math.floor(totals.beforePoint / STORE.pointUnit) * STORE.pointUnit,
+  );
+  const usable = maxUsable >= STORE.pointMin;
 
   if (!usable) {
     openModal("point-disabled", { totals });
@@ -1922,7 +1933,6 @@ function beginPointPinVerification(returnScreen, returnData = {}) {
   }
 
   state.pointPinInput = "";
-  state.pointPinAttempts = 0;
   state.pointPinVerified = false;
   state.pointPinReturnScreen = returnScreen || "point-phone";
   state.pointPinReturnData = { ...returnData };
@@ -2040,7 +2050,12 @@ SCREENS["point-input"] = (modal, { maxUsable }) => {
 
 /* ── 05 결제수단 안내 → P5·P6 승인 ────────────────────────────────────────── */
 function startPayment() {
-  const method = state.method || "card";
+  const method = state.method;
+  if (!method) {
+    closeModal();
+    showToast("결제수단을 먼저 선택해주세요");
+    return;
+  }
   if (method === "cash") {
     openModal("pay-cash");
     return;
@@ -2568,10 +2583,29 @@ function resetKiosk() {
   state.pointPinReturnScreen = "point-phone";
   state.pointPinReturnData = {};
   state.vanRetry = 0;
+  state.timeoutReturnScreen = null;
+  state.timeoutReturnData = {};
+  clearTimeout(state.modalTransitionTimer);
+  state.modalTransitionTimer = null;
   state.category = CATEGORIES[0];
   state.page = 0;
   closeModal();
   renderAll();
+}
+
+function continueAfterTimeout() {
+  clearInterval(state.countdownTimer);
+  const returnScreen = state.timeoutReturnScreen;
+  const returnData = { ...state.timeoutReturnData };
+  state.timeoutReturnScreen = null;
+  state.timeoutReturnData = {};
+
+  if (returnScreen) {
+    openModal(returnScreen, returnData);
+  } else {
+    closeModal();
+  }
+  resetIdleTimer();
 }
 
 function resetIdleTimer() {
@@ -2579,16 +2613,25 @@ function resetIdleTimer() {
   clearTimeout(state.warnTimer);
 
   const limit = Number(CONFIG.timeoutSec || 0);
-  if (limit <= 0) {
+  if (
+    limit <= 0 ||
+    state.cart.length === 0 ||
+    state.modal === "complete" ||
+    state.modal === "store-help" ||
+    state.modal === "timeout"
+  ) {
     return;
   }
 
-  /* 만료 10초 전에 경고를 띄운다. 경고보다 짧게 설정하면 즉시 경고. */
-  const warnAfter = Math.max(1, limit - 10) * 1000;
+  const warningSeconds = Math.min(10, limit);
+  const warnAfter = Math.max(0, limit - warningSeconds) * 1000;
   state.warnTimer = setTimeout(() => {
-    if (state.modal === null && state.cart.length > 0) {
-      openModal("timeout");
+    if (state.cart.length === 0 || state.modal === "complete" || state.modal === "store-help") {
+      return;
     }
+    state.timeoutReturnScreen = state.modal;
+    state.timeoutReturnData = { ...state.modalData };
+    openModal("timeout", { seconds: warningSeconds });
   }, warnAfter);
 }
 
@@ -2686,8 +2729,21 @@ function bindEvents() {
     handleScan(code);
   });
 
-  document.addEventListener("click", () => focusScanner());
-  document.addEventListener("keydown", () => resetIdleTimer());
+  document.addEventListener("click", () => {
+    focusScanner();
+    if (state.modal === "timeout") {
+      continueAfterTimeout();
+      return;
+    }
+    resetIdleTimer();
+  });
+  document.addEventListener("keydown", () => {
+    if (state.modal === "timeout") {
+      continueAfterTimeout();
+      return;
+    }
+    resetIdleTimer();
+  });
   setInterval(focusScanner, 1200);
 }
 
