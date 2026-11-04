@@ -1631,7 +1631,11 @@ SCREENS["van-waiting"] = function (modal, data) {
   );
   scheduleModalTransition(function () {
     if (state.modal !== "van-waiting") return;
-    if (data.method === "easy" && state.vanRetry === 0) {
+    if (data.method === "easy") {
+      if (state.vanRetry >= 3) {
+        openModal("store-help", { locked: true, reason: "retry-limit" });
+        return;
+      }
       openModal("van-declined");
       return;
     }
@@ -1659,10 +1663,6 @@ SCREENS["van-declined"] = function (modal) {
         label: "다시 시도",
         variant: "primary",
         onClick: function () {
-          if (state.vanRetry >= 3) {
-            openModal("store-help", { locked: true, reason: "retry-limit" });
-            return;
-          }
           state.vanRetry += 1;
           openModal("van-waiting", { method: state.method || "card" });
         },
@@ -1707,10 +1707,15 @@ SCREENS["cash-return"] = function (modal, data) {
 
 /* E-HELP-01 */
 SCREENS["store-help"] = function (modal, data) {
+  const retryLimit = data && data.reason === "retry-limit";
   designAlert(modal, {
     icon: iconWarning(),
-    title: "결제가 완료되지 않았습니다",
-    desc: "카드는 정상이며 결제 금액이 빠져나가지 않았습니다",
+    title: retryLimit
+      ? "결제가 반복해서 승인되지 않았습니다"
+      : "결제 상태를 확인해야 합니다",
+    desc: retryLimit
+      ? "추가 결제를 진행하기 전에 매장 직원의 확인을 받아주세요"
+      : "승인 처리 상태가 확정되지 않았습니다. 추가 결제를 시도하지 말고 매장 직원의 확인을 받아주세요",
     rows: [
       {
         label: "키오스크 번호",
@@ -1723,7 +1728,9 @@ SCREENS["store-help"] = function (modal, data) {
         className: "row__value--big",
       },
     ],
-    note: "“" + STORE.kioskNo + "번 키오스크에서 결제가 안 됐어요” 라고 말씀해 주세요",
+    note: retryLimit
+      ? "“" + STORE.kioskNo + "번 키오스크에서 결제가 계속 승인되지 않아요” 라고 말씀해 주세요"
+      : "“" + STORE.kioskNo + "번 키오스크의 결제 상태를 확인해주세요” 라고 말씀해 주세요",
     actions: actionRow([
       {
         label: "직원 확인이 필요합니다",
