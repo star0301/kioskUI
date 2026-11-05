@@ -191,7 +191,9 @@ function keypadExact(onKey, wide) {
     function (key) {
       const button = el(
         "button",
-        "key" + (key === "전체삭제" || key === "←" ? " key--fn" : ""),
+        "key" +
+          (key === "전체삭제" || key === "←" ? " key--fn" : "") +
+          (key === "전체삭제" ? " key--clear" : ""),
         key,
       );
       button.type = "button";
