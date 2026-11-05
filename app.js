@@ -1046,7 +1046,7 @@ function renderCatalog() {
   });
 
   const items = PRODUCTS.filter((p) => p.cat === state.category);
-  const pageSize = 10;
+  const pageSize = 8;
   const pageCount = Math.max(1, Math.ceil(items.length / pageSize));
   state.page = Math.min(state.page, pageCount - 1);
 
@@ -2725,7 +2725,7 @@ function bindEvents() {
   on("#btn-page-next", "click", () => {
     switchCatalog(() => {
       const items = PRODUCTS.filter((p) => p.cat === state.category);
-      const last = Math.max(0, Math.ceil(items.length / 10) - 1);
+      const last = Math.max(0, Math.ceil(items.length / 8) - 1);
       state.page = Math.min(last, state.page + 1);
     });
   });
