@@ -2317,7 +2317,7 @@ SCREENS["complete"] = (modal, { totals }) => {
 SCREENS["item-soldout"] = (modal, { product }) => {
   alertScreen(modal, {
     icon: iconWarning(),
-    title: "품절된 상품입니다",
+    title: "판매중지된 상품입니다",
     desc: "이 상품은 담을 수 없습니다. 매대에 되돌려 주세요",
     rows: [{ label: "상품명", value: product.name }],
     actions: actionRow([
