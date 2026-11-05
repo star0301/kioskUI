@@ -349,8 +349,17 @@ p {
 }
 
 .panel--catalog {
-  gap: var(--sp-12);
-  padding-bottom: var(--sp-16);
+  width: 388px;
+  gap: 16px;
+  padding-bottom: 0;
+}
+
+.panel--catalog > .panel__title {
+  display: flex;
+  flex: 0 0 92px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
 /* ── 장바구니 ───────────────────────────────────────────────────────────── */
@@ -415,9 +424,9 @@ p {
   -webkit-line-clamp: 2;
   line-clamp: 2;
   overflow: hidden;
-  /* [고정] 한 줄짜리 상품명도 2줄 자리를 차지한다 (15px x 행간21 x 2줄) */
-  flex: 0 0 42px;
-  height: 42px;
+  /* 04 기준: 상품명은 항상 두 줄 자리 40px을 예약한다. */
+  flex: 0 0 40px;
+  height: 40px;
   font-size: var(--fs-15);
   font-weight: 500;
   line-height: 21px;
@@ -599,12 +608,11 @@ p {
 
 .catalog {
   display: flex;
+  flex: 0 0 1176px;
   flex-direction: column;
-  flex: 1;
-  /* [정수화] 12 -> 11 : 44 + 11 + 1187 + 11 + 44 = 1297 (오차 0) */
-  gap: 11px;
+  gap: 0;
   min-height: 0;
-  padding: 0 var(--sp-16);
+  padding: 0;
   overflow: hidden;
 }
 
@@ -615,9 +623,12 @@ p {
 
 .catalog__tabs {
   display: grid;
+  flex: 0 0 80px;
   grid-template-columns: 44px 1fr 44px;
   align-items: center;
   gap: var(--sp-8);
+  height: 80px;
+  padding: 0 12px;
 }
 
 .catalog__arrow,
@@ -673,18 +684,20 @@ p {
 }
 
 /*
-  항상 2열 × 5행 규격을 유지한다.
-  grid-auto-flow: column 이라 상품이 5개인 마지막 페이지는
-  1열만 채우고 오른쪽 열은 비워 둔다. (의도된 배치)
+  04 기준: 2열 × 4행 · 페이지당 8개.
+  Grid 388×984 = 좌우 12 + 카드 176×2 + 가로 gap 12,
+  상하 14 + 카드 230×4 + 세로 gap 12×3.
 */
 .catalog__grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  /* [고정] 1fr 로 늘리지 않고 231 고정 — 5 x 231 + 4 x 8 = 1187 */
-  grid-template-rows: repeat(5, 231px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(4, 230px);
   grid-auto-flow: column;
-  flex: 1;
-  gap: var(--sp-8);
+  flex: 0 0 984px;
+  box-sizing: border-box;
+  height: 984px;
+  gap: 12px;
+  padding: 14px 12px;
   min-height: 0;
   overflow: hidden;
   transition: opacity 0.18s ease;
@@ -703,12 +716,11 @@ p {
   flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
-  /* [고정] 카드 231 = 테두리1 + 패딩8 + 이름42 + 4 + 이미지123 + 4 + 가격40 + 패딩8 + 테두리1 */
-  height: 231px;
-  gap: var(--sp-4);
+  height: 230px;
+  gap: 10px;
   min-width: 0;
   min-height: 0;
-  padding: var(--sp-8) var(--sp-12);
+  padding: 12px 14px;
   border: 1.5px solid var(--c-border-default);
   border-radius: var(--r-md);
   background: var(--c-bg-surface);
@@ -723,10 +735,10 @@ p {
   align-items: center;
   justify-content: center;
   align-self: center;
-  /* [고정] 남는 공간을 흡수하지 않는다 — 상품명 줄수와 무관하게 123 정사각 */
-  flex: 0 0 123px;
-  width: 123px;
-  height: 123px;
+  /* ERP 1:1 이미지 슬롯 — 04 기준 104×104 */
+  flex: 0 0 104px;
+  width: 104px;
+  height: 104px;
   max-width: 100%;
   aspect-ratio: 1 / 1;
   overflow: hidden;
@@ -756,10 +768,9 @@ p {
 .product__price-stack {
   display: flex;
   flex-direction: column;
-  /* [고정] 원가 줄(16) + 2 + 판매가 줄(22) = 40 을 항상 예약.
-     행사가 없으면 위쪽 원가 자리가 빈 줄로 남는다 (의도된 동작) */
-  flex: 0 0 40px;
-  height: 40px;
+  /* 원가 16 + 간격 2 + 판매가 행 24 = 42 */
+  flex: 0 0 42px;
+  height: 42px;
   justify-content: flex-end;
   gap: 2px;
 }
@@ -777,7 +788,7 @@ p {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 22px;
+  height: 24px;
   gap: var(--sp-4);
 }
 
@@ -796,9 +807,17 @@ p {
 
 .catalog__pager {
   display: flex;
+  flex: 0 0 112px;
   align-items: center;
   justify-content: center;
+  height: 112px;
   gap: var(--sp-12);
+}
+
+.panel--catalog > #btn-bag:not(.btn--cart-inline) {
+  width: 388px;
+  min-height: 80px;
+  margin: 0;
 }
 
 .pager__dots {
