@@ -291,7 +291,7 @@ SCREENS["login-prompt"] = function (modal) {
   modal.appendChild(
     calloutCard(
       "brand",
-      "✓  토마토 APP 로그인 한 번이면",
+      "✓  회원 로그인 한 번이면",
       "할인 가능한 쿠폰은 자동 적용돼요",
     ),
   );
