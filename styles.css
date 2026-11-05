@@ -2749,3 +2749,25 @@ p {
     max-height: none;
   }
 }
+
+
+/* Modal interactive text: Figma 24px + Hug */
+.modal button,
+.modal button * {
+  font-size: 24px !important;
+}
+
+.modal button {
+  line-height: 1.25;
+}
+
+.modal .point-option__label,
+.modal .point-option__value {
+  width: auto;
+}
+
+.modal .signup-card__title,
+.modal .signup-card__desc,
+.modal .signup-card__phone-title {
+  line-height: 1.25;
+}
