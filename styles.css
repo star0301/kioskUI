@@ -894,18 +894,24 @@ p {
 
 .method__pays {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
-  gap: var(--sp-4);
+  gap: 6px;
 }
 
 .pay-chip {
-  padding: 2px var(--sp-8);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 20px;
+  padding: 0;
   border-radius: var(--r-sm);
-  font-size: var(--fs-11);
+  font-size: 9px;
   font-weight: 700;
   color: #ffffff;
+  white-space: nowrap;
 }
 
 /* 브랜드 고유색 — 04 기획의 Brand Mark 기준 */
@@ -928,6 +934,10 @@ p {
 
 .pay-chip--zero {
   background: #1fb7b2;
+}
+
+.pay-chip--toss {
+  background: #0064ff;
 }
 
 .method__name {
@@ -2751,7 +2761,7 @@ p {
 }
 
 
-/* Modal interactive text: Figma 24px + Hug */
+/* Modal interactive text: latest Figma 04 measurements */
 .modal button,
 .modal button * {
   font-size: 24px !important;
@@ -2761,13 +2771,55 @@ p {
   line-height: 1.25;
 }
 
-.modal .point-option__label,
-.modal .point-option__value {
-  width: auto;
+.modal .point-option,
+.modal .point-option * {
+  font-size: 18px !important;
+}
+
+.modal .history-period {
+  font-size: 18px !important;
+}
+
+.modal .key--clear {
+  font-size: 20px !important;
+}
+
+.modal .bag__name {
+  font-size: 17px !important;
+}
+
+.modal .bag__size {
+  font-size: 14px !important;
+}
+
+.modal .bag__price {
+  font-size: 22px !important;
+}
+
+.modal .bag__action {
+  font-size: 20px !important;
 }
 
 .modal .signup-card__title,
-.modal .signup-card__desc,
 .modal .signup-card__phone-title {
+  font-size: 24px !important;
   line-height: 1.25;
+}
+
+.modal .signup-card__desc {
+  font-size: 16px !important;
+  line-height: 1.25;
+}
+
+.modal--point-app .automatic-discount-summary .btn {
+  font-size: 18px !important;
+}
+
+.modal--point-app-disabled .automatic-discount-summary .btn {
+  font-size: 20px !important;
+}
+
+.modal .point-option__label,
+.modal .point-option__value {
+  width: auto;
 }
