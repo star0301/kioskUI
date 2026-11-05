@@ -898,21 +898,20 @@ function automaticDiscountDetailSummary(discountCount) {
 /* 04-APP */
 SCREENS["point-app"] = function (modal, data) {
   const totals = data.totals;
-  const automatic = totals.saleDiscount + totals.couponDiscount;
-  const hasAutomaticDiscount = automatic > 0;
+  const hasApplicableCoupon = totals.coupons.length > 0;
   const payable = totals.beforePoint - state.usedPoint;
 
   setModal(modal, "modal--point modal--point-app");
   modal.appendChild(backButton(returnFromPointScreen));
   modalIntro(
     modal,
-    hasAutomaticDiscount
+    hasApplicableCoupon
       ? "할인 쿠폰을 모두 적용했어요"
-      : "적용 가능한 쿠폰이 없네요. 포인트 사용하실래요?",
+      : "아쉽게도 할인 적용 가능한 쿠폰이 없어요",
   );
 
-  if (hasAutomaticDiscount) {
-    modal.appendChild(appMemberLine("자동 할인 적용 완료"));
+  if (hasApplicableCoupon) {
+    modal.appendChild(appMemberLine("자동 쿠폰 적용 완료"));
     modal.appendChild(automaticSavingsCard(totals));
     modal.appendChild(
       el("h2", "modal__title app-point-question", "포인트도 사용하실래요?"),
@@ -922,7 +921,7 @@ SCREENS["point-app"] = function (modal, data) {
   modal.appendChild(appPointChoice(totals, false));
   modal.appendChild(
     automaticDiscountSummary(totals, {
-      showDetails: hasAutomaticDiscount,
+      showDetails: hasApplicableCoupon,
     }),
   );
   modal.appendChild(finalPaymentDark(payable));
@@ -1076,19 +1075,19 @@ function finalPaymentCard(totals) {
 SCREENS["point-disabled"] = function (modal, data) {
   const totals = data.totals;
   if (state.member.type === "app") {
-    const automatic = totals.saleDiscount + totals.couponDiscount;
+    const hasApplicableCoupon = totals.coupons.length > 0;
     setModal(modal, "modal--point modal--point-app modal--point-app-disabled");
     modal.appendChild(backButton(returnFromPointScreen));
     modalIntro(
       modal,
-      automatic > 0
+      hasApplicableCoupon
         ? "할인 쿠폰을 모두 적용했어요"
-        : "적용 가능한 자동 할인이 없어요",
+        : "아쉽게도 할인 적용 가능한 쿠폰이 없어요",
     );
     modal.appendChild(
-      appMemberLine(automatic > 0 ? "자동 할인 적용 완료" : "적용 가능한 자동 할인 없음"),
+      appMemberLine(hasApplicableCoupon ? "자동 쿠폰 적용 완료" : "적용 가능한 쿠폰 없음"),
     );
-    if (automatic > 0) {
+    if (hasApplicableCoupon) {
       modal.appendChild(automaticSavingsCard(totals));
     }
     modal.appendChild(
@@ -1102,7 +1101,7 @@ SCREENS["point-disabled"] = function (modal, data) {
     modal.appendChild(
       automaticDiscountSummary(totals, {
         disabled: true,
-        showDetails: automatic > 0,
+        showDetails: hasApplicableCoupon,
       }),
     );
     modal.appendChild(finalPaymentDark(totals.beforePoint));
