@@ -1479,7 +1479,8 @@ function keypad(onKey) {
   ];
   keys.forEach((key) => {
     const isFn = key === "전체삭제" || key === "←";
-    const btn = el("button", `key${isFn ? " key--fn" : ""}`, key);
+    const isClear = key === "전체삭제";
+    const btn = el("button", `key${isFn ? " key--fn" : ""}${isClear ? " key--clear" : ""}`, key);
     btn.addEventListener("click", () => onKey(key));
     pad.appendChild(btn);
   });
