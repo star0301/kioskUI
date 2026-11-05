@@ -381,8 +381,8 @@ SCREENS["login"] = function (modal) {
     );
     const signup = el("div", "signup-methods");
     [
-      ["Android", "Google Play에서 설치"],
-      ["iPhone", "App Store에서 설치"],
+      ["Android", "Google Play에서\n설치"],
+      ["iPhone", "App Store에서\n설치"],
     ].forEach(function (labels) {
       const card = el("button", "signup-card signup-card--qr");
       card.appendChild(el("span", "signup-card__qr", qrSvg()));
@@ -445,8 +445,8 @@ SCREENS["not-member"] = function (modal, data) {
     );
     const qrRow = el("div", "signup-methods signup-methods--two");
     [
-      ["Android", "Google Play에서 설치"],
-      ["iPhone", "App Store에서 설치"],
+      ["Android", "Google Play에서\n설치"],
+      ["iPhone", "App Store에서\n설치"],
     ].forEach(function (labels) {
       const card = el("button", "signup-card signup-card--qr");
       card.appendChild(el("span", "signup-card__qr", qrSvg()));
