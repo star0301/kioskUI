@@ -39,6 +39,7 @@ const DEMO_DEFAULTS = {
   blockAgeRestricted: false,
   useBag: true,
   timeoutSec: 0,
+  demoCouponsEnabled: true,
 };
 
 const OPTION_META = [
@@ -89,6 +90,13 @@ const OPTION_META = [
     name: "타임아웃 (초)",
     desc: "무조작이 이어지면 전체를 초기화합니다. 0 이면 사용하지 않습니다. 만료 10초 전에 경고를 띄웁니다.",
     type: "number",
+  },
+  {
+    key: "demoCouponsEnabled",
+    name: "시연 전용 · APP 쿠폰 데이터",
+    desc: "ERP에서 적용 가능한 자동 쿠폰이 내려오는 상황을 시뮬레이션합니다. OFF면 적용 가능한 쿠폰 0건으로 테스트합니다.",
+    type: "toggle",
+    demoOnly: true,
   },
 ];
 
@@ -848,6 +856,10 @@ function calcTotals() {
 }
 
 function activeCoupons() {
+  if (CONFIG.demoCouponsEnabled === false) {
+    return [];
+  }
+
   const result = [];
 
   COUPONS.forEach((coupon) => {
