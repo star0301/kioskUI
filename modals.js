@@ -766,7 +766,7 @@ function appPointChoice(totals, disabled) {
 
   if (disabled) {
     const options = el("div", "point-options app-point-choice__options");
-    ["사용 안 함", "직접 입력", "사용 가능 전액 ✓"].forEach(function (label) {
+    ["사용 안 함 ✓", "직접 입력", "사용 가능 전액"].forEach(function (label) {
       const option = el("button", "point-option", label);
       option.type = "button";
       option.disabled = true;
@@ -1143,7 +1143,7 @@ SCREENS["point-disabled"] = function (modal, data) {
     modal.appendChild(detail);
   }
   const disabledOptions = el("div", "point-options");
-  ["사용 안 함", "직접 입력", "사용 가능 전액 ✓"].forEach(function (label) {
+  ["사용 안 함 ✓", "직접 입력", "사용 가능 전액"].forEach(function (label) {
     const option = el("button", "point-option", label);
     option.disabled = true;
     disabledOptions.appendChild(option);
